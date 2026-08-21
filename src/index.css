@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 8% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 8% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 8% 8%;
+
+    --primary: 44 68% 47%;
+    --primary-foreground: 240 10% 5%;
+
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 8% 12%;
+
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 42%;
+
+    --accent: 44 60% 94%;
+    --accent-foreground: 42 60% 22%;
+
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 6% 88%;
+    --input: 240 6% 88%;
+    --ring: 44 68% 47%;
+
+    --radius: 0.65rem;
+  }
+
+  .dark {
+    --background: 240 9% 5%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 8% 9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 8% 9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 44 68% 53%;
+    --primary-foreground: 240 10% 5%;
+
+    --secondary: 240 6% 15%;
+    --secondary-foreground: 0 0% 96%;
+
+    --muted: 240 6% 15%;
+    --muted-foreground: 240 5% 66%;
+
+    --accent: 44 40% 18%;
+    --accent-foreground: 44 70% 72%;
+
+    --destructive: 0 62% 48%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 6% 18%;
+    --input: 240 6% 20%;
+    --ring: 44 68% 53%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04';
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Scrollbar discreta, no tom grafite */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-muted;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+}
+
+@layer components {
+  .heading-display {
+    @apply font-display tracking-tight;
+  }
+
+  .gold-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-gold-500/40 to-transparent;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-md bg-muted;
+  }
+}
