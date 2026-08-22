@@ -9,9 +9,17 @@ const VARIANTES: Record<SituacaoCliente, 'success' | 'default' | 'danger' | 'mut
   perdido: 'danger',
 }
 
-export function SituacaoBadge({ situacao, titulo }: { situacao: SituacaoCliente; titulo?: string }) {
+export function SituacaoBadge({
+  situacao,
+  titulo,
+  className,
+}: {
+  situacao: SituacaoCliente
+  titulo?: string
+  className?: string
+}) {
   return (
-    <Badge variant={VARIANTES[situacao]} title={titulo}>
+    <Badge variant={VARIANTES[situacao]} title={titulo} className={className}>
       {ROTULOS_SITUACAO[situacao]}
     </Badge>
   )

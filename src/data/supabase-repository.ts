@@ -22,6 +22,8 @@ const SELECT_VISITA = `
   visita_servicos:visita_servicos(servico:servicos(*))
 `
 
+const TAMANHO_PAGINA = 1000
+
 /**
  * Implementação do mesmo contrato usando Supabase (Postgres).
  * Ativa automaticamente quando VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY existem.
@@ -146,13 +148,35 @@ export class SupabaseRepository implements BarberRepository {
   }
 
   async listarVisitas(): Promise<VisitaDetalhada[]> {
-    const { data, error } = await this.db
-      .from('visitas')
-      .select(SELECT_VISITA)
-      .order('data_atendimento', { ascending: false })
-      .order('created_at', { ascending: false })
-    if (error) throw new RepositoryError('Não foi possível carregar as visitas.', error)
-    return (data as unknown as VisitaComRelacoes[]).map((registro) => this.mapearVisita(registro))
+    const registros: VisitaComRelacoes[] = []
+    let inicio = 0
+    let totalEsperado: number | null = null
+
+    // O Data API limita a quantidade de linhas por resposta. Paginar mantém os
+    // indicadores históricos corretos mesmo depois de milhares de visitas.
+    while (totalEsperado === null || registros.length < totalEsperado) {
+      const { data, error, count } = await this.db
+        .from('visitas')
+        .select(SELECT_VISITA, { count: 'exact' })
+        .order('data_atendimento', { ascending: false })
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(inicio, inicio + TAMANHO_PAGINA - 1)
+
+      if (error) throw new RepositoryError('Não foi possível carregar as visitas.', error)
+
+      const pagina = (data ?? []) as unknown as VisitaComRelacoes[]
+      if (totalEsperado === null && count !== null) totalEsperado = count
+      if (pagina.length === 0) break
+
+      registros.push(...pagina)
+      inicio += pagina.length
+
+      // Fallback para projetos que não devolvem contagem no cabeçalho.
+      if (totalEsperado === null && pagina.length < TAMANHO_PAGINA) break
+    }
+
+    return registros.map((registro) => this.mapearVisita(registro))
   }
 
   async criarVisita(input: VisitaInput): Promise<VisitaDetalhada> {

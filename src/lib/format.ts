@@ -51,6 +51,15 @@ export function formatarNumero(valor: number): string {
   return new Intl.NumberFormat('pt-BR').format(valor)
 }
 
+/** 42,5% */
+export function formatarPercentual(valor: number, casas = 1): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'percent',
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
+  }).format(valor / 100)
+}
+
 /** 45 min · 1h 30min */
 export function formatarDuracao(minutos: number | null | undefined): string {
   if (!minutos) return '—'

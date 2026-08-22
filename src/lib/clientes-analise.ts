@@ -218,6 +218,21 @@ export function resumirSituacoes(analises: AnaliseCliente[]): ResumoSituacoes {
   return { total: analises.length, porSituacao }
 }
 
+/** Clientes ativos com mais visitas no histórico; gasto desempata frequências iguais. */
+export function rankingClientesPorFrequencia(
+  analises: AnaliseCliente[],
+  limite = 6,
+): AnaliseCliente[] {
+  return analises
+    .filter((analise) => analise.cliente.status === 'ativo' && analise.totalVisitas > 0)
+    .sort((a, b) => {
+      if (b.totalVisitas !== a.totalVisitas) return b.totalVisitas - a.totalVisitas
+      if (b.totalGasto !== a.totalGasto) return b.totalGasto - a.totalGasto
+      return a.cliente.nome.localeCompare(b.cliente.nome, 'pt-BR')
+    })
+    .slice(0, Math.max(0, limite))
+}
+
 /**
  * Monta o link de conversa no WhatsApp. Retorna null quando o cliente não tem
  * telefone cadastrado — o campo é opcional.
