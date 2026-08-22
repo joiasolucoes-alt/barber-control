@@ -9,6 +9,10 @@ Sistema web responsivo para **controle de clientes e atendimentos já realizados
 ## O que dá para fazer
 
 - Cadastrar, visualizar, editar e inativar clientes.
+- Acompanhar a **situação de cada cliente** (novo, recorrente, em risco, perdido),
+  calculada a partir do ritmo de retorno dele.
+- Ver quem está atrasado e falar com o cliente pelo WhatsApp em um clique.
+- Consultar os aniversariantes do mês.
 - Cadastrar e gerenciar os serviços oferecidos.
 - Registrar visitas (atendimentos realizados) com **um ou vários serviços na mesma visita**.
 - Consultar todos os clientes atendidos em uma data específica.
@@ -123,3 +127,23 @@ src/
   `camelCase`.
 - "Clientes atendidos" sempre conta **clientes distintos** no período — o mesmo cliente
   nunca é contado duas vezes no mesmo atendimento.
+- `status` (ativo/inativo) é uma decisão manual: arquivar um cliente. **Situação** é
+  calculada e nunca é gravada no banco. As duas coisas respondem perguntas diferentes.
+- Telefone/WhatsApp é opcional. Cliente sem telefone fica de fora das ações de retorno.
+
+## Como a situação do cliente é calculada
+
+Em [`src/lib/clientes-analise.ts`](src/lib/clientes-analise.ts). O ritmo é a média de dias
+entre as visitas do próprio cliente, limitada entre 7 e 120 dias. Quem tem uma visita só
+usa 45 dias como referência até criar histórico.
+
+| Situação | Regra |
+| --- | --- |
+| Sem visitas | Cadastrado, nenhum atendimento registrado |
+| Novo | Uma visita, dentro de 1,5× o ritmo |
+| Recorrente | Duas ou mais visitas, dentro de 1,5× o ritmo |
+| Em risco | Passou de 1,5× o ritmo |
+| Perdido | Passou de 3× o ritmo |
+
+A lista "precisam de atenção" ordena por número de visitas: cliente frequente que sumiu
+vale mais um contato do que quem veio uma vez. Lista curta é lista que se usa.

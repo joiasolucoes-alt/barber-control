@@ -2,7 +2,9 @@ import * as React from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CalendarRange, Cake, Pencil, Phone, Plus, StickyNote } from 'lucide-react'
 
+import { BotaoWhatsApp } from '@/components/clientes/botao-whatsapp'
 import { ClienteFormDialog } from '@/components/clientes/cliente-form-dialog'
+import { SituacaoBadge } from '@/components/clientes/situacao-badge'
 import { ClienteAvatar } from '@/components/common/cliente-avatar'
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/data-state'
@@ -11,10 +13,22 @@ import { VisitaFormDialog } from '@/components/visitas/visita-form-dialog'
 import { VisitaServicosTags } from '@/components/visitas/visita-servicos-tags'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useBarberData } from '@/hooks/use-barber-data'
-import { formatarData, formatarDataExtensa, formatarNumero, pluralizar } from '@/lib/format'
-import { resumirCliente } from '@/lib/metrics'
+import {
+  exibirTelefone,
+  formatarData,
+  formatarDataExtensa,
+  formatarMoeda,
+  formatarNumero,
+  pluralizar,
+} from '@/lib/format'
+import {
+  analisarCliente,
+  DESCRICOES_SITUACAO,
+  mensagemRetorno,
+} from '@/lib/clientes-analise'
 
 function LinhaInfo({ icone, rotulo, valor }: { icone: React.ReactNode; rotulo: string; valor: string }) {
   return (
@@ -39,7 +53,16 @@ export function ClienteDetalhePage() {
   const [visitaAberta, setVisitaAberta] = React.useState(false)
 
   const cliente = clientes.find((item) => item.id === id) ?? null
-  const resumo = React.useMemo(() => resumirCliente(id, visitas), [id, visitas])
+  const analise = React.useMemo(
+    () =>
+      cliente
+        ? analisarCliente(
+            cliente,
+            visitas.filter((visita) => visita.cliente_id === cliente.id),
+          )
+        : null,
+    [cliente, visitas],
+  )
 
   if (erro) {
     return <ErrorState mensagem={erro} aoTentarNovamente={() => void recarregar()} />
@@ -55,7 +78,7 @@ export function ClienteDetalhePage() {
     )
   }
 
-  if (!cliente) {
+  if (!cliente || !analise) {
     return (
       <EmptyState
         icone={<CalendarRange />}
@@ -83,8 +106,9 @@ export function ClienteDetalhePage() {
           <div className="flex items-start gap-4">
             <ClienteAvatar nome={cliente.nome} className="h-14 w-14 text-base" />
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="heading-display text-2xl font-semibold">{cliente.nome}</h1>
+                <SituacaoBadge situacao={analise.situacao} titulo={DESCRICOES_SITUACAO[analise.situacao]} />
                 <StatusBadge status={cliente.status} />
               </div>
               <p className="text-sm text-muted-foreground">
@@ -94,6 +118,14 @@ export function ClienteDetalhePage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <BotaoWhatsApp
+              cliente={cliente}
+              mensagem={
+                analise.situacao === 'em-risco' || analise.situacao === 'perdido'
+                  ? mensagemRetorno(cliente)
+                  : undefined
+              }
+            />
             <Button variant="outline" onClick={() => setFormAberto(true)}>
               <Pencil aria-hidden /> Editar
             </Button>
@@ -110,7 +142,7 @@ export function ClienteDetalhePage() {
             <CardTitle>Dados pessoais</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <LinhaInfo icone={<Phone />} rotulo="Telefone" valor={cliente.telefone} />
+            <LinhaInfo icone={<Phone />} rotulo="Telefone / WhatsApp" valor={exibirTelefone(cliente.telefone)} />
             <LinhaInfo icone={<Cake />} rotulo="Nascimento" valor={formatarData(cliente.data_nascimento)} />
             <LinhaInfo
               icone={<StickyNote />}
@@ -129,16 +161,66 @@ export function ClienteDetalhePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Total de visitas</p>
-                <p className="heading-display text-3xl font-semibold">{formatarNumero(resumo.totalVisitas)}</p>
+                <p className="heading-display text-3xl font-semibold">{formatarNumero(analise.totalVisitas)}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Última visita</p>
-                <p className="text-sm font-medium">{formatarData(resumo.ultimaVisita)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Primeira: {formatarData(resumo.primeiraVisita)}
-                </p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Total gasto</p>
+                <p className="heading-display text-3xl font-semibold">{formatarMoeda(analise.totalGasto)}</p>
               </div>
             </div>
+
+            <Separator />
+
+            <dl className="space-y-3 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted-foreground">Última visita</dt>
+                <dd className="text-right font-medium">
+                  {formatarData(analise.ultimaVisita)}
+                  {analise.diasDesdeUltimaVisita !== null ? (
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      há {analise.diasDesdeUltimaVisita} dias
+                    </span>
+                  ) : null}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted-foreground">Primeira visita</dt>
+                <dd className="font-medium">{formatarData(analise.primeiraVisita)}</dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted-foreground">Ritmo de retorno</dt>
+                <dd className="text-right font-medium">
+                  {analise.intervaloMedioDias ? (
+                    `a cada ${analise.intervaloMedioDias} dias`
+                  ) : (
+                    <span className="font-normal text-muted-foreground">histórico insuficiente</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-muted-foreground">Retorno esperado</dt>
+                <dd className="text-right font-medium">
+                  {formatarData(analise.previsaoRetorno)}
+                  {analise.diasDeAtraso !== null ? (
+                    <span
+                      className={
+                        analise.diasDeAtraso > 0
+                          ? 'block text-xs font-normal text-destructive'
+                          : 'block text-xs font-normal text-muted-foreground'
+                      }
+                    >
+                      {analise.diasDeAtraso > 0
+                        ? `${analise.diasDeAtraso} dias de atraso`
+                        : `faltam ${Math.abs(analise.diasDeAtraso)} dias`}
+                    </span>
+                  ) : null}
+                </dd>
+              </div>
+            </dl>
+
+            <p className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+              {DESCRICOES_SITUACAO[analise.situacao]}
+            </p>
           </CardContent>
         </Card>
 
@@ -147,11 +229,11 @@ export function ClienteDetalhePage() {
             <CardTitle>Serviços mais utilizados</CardTitle>
           </CardHeader>
           <CardContent>
-            {resumo.servicosFrequentes.length === 0 ? (
+            {analise.servicosFrequentes.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum serviço registrado ainda.</p>
             ) : (
               <ol className="space-y-3">
-                {resumo.servicosFrequentes.map((servico) => (
+                {analise.servicosFrequentes.map((servico) => (
                   <li key={servico.id} className="space-y-1">
                     <div className="flex items-baseline justify-between gap-3 text-sm">
                       <span className="truncate">{servico.nome}</span>
@@ -172,12 +254,12 @@ export function ClienteDetalhePage() {
         <CardHeader>
           <CardTitle>Histórico de visitas</CardTitle>
           <CardDescription>
-            {resumo.totalVisitas} {pluralizar(resumo.totalVisitas, 'atendimento registrado', 'atendimentos registrados')},
+            {analise.totalVisitas} {pluralizar(analise.totalVisitas, 'atendimento registrado', 'atendimentos registrados')},
             do mais recente ao mais antigo.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {resumo.visitas.length === 0 ? (
+          {analise.visitas.length === 0 ? (
             <EmptyState
               icone={<CalendarRange />}
               titulo="Nenhuma visita registrada"
@@ -190,7 +272,7 @@ export function ClienteDetalhePage() {
             />
           ) : (
             <ol className="relative space-y-4 border-l border-border pl-6">
-              {resumo.visitas.map((visita) => (
+              {analise.visitas.map((visita) => (
                 <li key={visita.id} className="relative">
                   <span
                     aria-hidden

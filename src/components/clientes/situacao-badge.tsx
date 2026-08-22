@@ -1,0 +1,18 @@
+import { Badge } from '@/components/ui/badge'
+import { ROTULOS_SITUACAO, type SituacaoCliente } from '@/lib/clientes-analise'
+
+const VARIANTES: Record<SituacaoCliente, 'success' | 'default' | 'danger' | 'muted' | 'secondary'> = {
+  'sem-visitas': 'muted',
+  novo: 'secondary',
+  recorrente: 'success',
+  'em-risco': 'default',
+  perdido: 'danger',
+}
+
+export function SituacaoBadge({ situacao, titulo }: { situacao: SituacaoCliente; titulo?: string }) {
+  return (
+    <Badge variant={VARIANTES[situacao]} title={titulo}>
+      {ROTULOS_SITUACAO[situacao]}
+    </Badge>
+  )
+}

@@ -62,7 +62,7 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
       cliente
         ? {
             nome: cliente.nome,
-            telefone: cliente.telefone,
+            telefone: cliente.telefone ?? '',
             data_nascimento: cliente.data_nascimento ?? '',
             observacoes: cliente.observacoes ?? '',
             status: cliente.status,
@@ -77,7 +77,7 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
     try {
       const payload = {
         nome: valores.nome,
-        telefone: valores.telefone,
+        telefone: valores.telefone || null,
         data_nascimento: valores.data_nascimento || null,
         observacoes: valores.observacoes || null,
         status: valores.status,
@@ -116,7 +116,12 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="cliente-telefone" rotulo="Telefone" obrigatorio erro={errors.telefone?.message}>
+            <Field
+              id="cliente-telefone"
+              rotulo="Telefone / WhatsApp"
+              erro={errors.telefone?.message}
+              dica="Opcional, mas necessário para as ações de retorno"
+            >
               {(props) => (
                 <Input
                   {...props}

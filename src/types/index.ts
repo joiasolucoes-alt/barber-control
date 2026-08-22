@@ -17,7 +17,8 @@ export type TimestampISO = string
 export interface Cliente {
   id: string
   nome: string
-  telefone: string
+  /** Telefone/WhatsApp — opcional. */
+  telefone: string | null
   data_nascimento: DataISO | null
   observacoes: string | null
   status: StatusRegistro
@@ -62,7 +63,7 @@ export interface VisitaDetalhada extends Visita {
 
 export type ClienteInput = {
   nome: string
-  telefone: string
+  telefone?: string | null
   data_nascimento?: DataISO | null
   observacoes?: string | null
   status?: StatusRegistro

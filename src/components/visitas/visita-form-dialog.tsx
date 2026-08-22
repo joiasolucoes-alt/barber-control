@@ -99,14 +99,14 @@ export function VisitaFormDialog({
       setErroRapido('Informe o nome completo do cliente.')
       return
     }
-    if (telefoneRapido.replace(/\D/g, '').length < 10) {
-      setErroRapido('Informe um telefone válido com DDD.')
+    if (telefoneRapido && telefoneRapido.replace(/\D/g, '').length < 10) {
+      setErroRapido('Telefone incompleto. Use DDD + número ou deixe em branco.')
       return
     }
 
     setSalvandoRapido(true)
     try {
-      const novo = await criarCliente({ nome: nomeRapido, telefone: telefoneRapido, status: 'ativo' })
+      const novo = await criarCliente({ nome: nomeRapido, telefone: telefoneRapido || null, status: 'ativo' })
       aoConcluir(novo.id)
       setCadastroRapidoAberto(false)
       setNomeRapido('')
@@ -198,7 +198,7 @@ export function VisitaFormDialog({
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="rapido-telefone">Telefone</Label>
+                        <Label htmlFor="rapido-telefone">Telefone / WhatsApp (opcional)</Label>
                         <Input
                           id="rapido-telefone"
                           value={telefoneRapido}

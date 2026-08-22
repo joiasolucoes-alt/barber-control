@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { formatarDataExtensa, formatarDataHora, formatarMoeda } from '@/lib/format'
+import { exibirTelefone, formatarDataExtensa, formatarDataHora, formatarMoeda } from '@/lib/format'
 import type { VisitaDetalhada } from '@/types'
 
 interface VisitaDetalheDialogProps {
@@ -46,7 +46,7 @@ export function VisitaDetalheDialog({ visita, aoFechar, aoEditar }: VisitaDetalh
                   >
                     {visita.cliente.nome}
                   </Link>
-                  <p className="truncate text-xs text-muted-foreground">{visita.cliente.telefone}</p>
+                  <p className="truncate text-xs text-muted-foreground">{exibirTelefone(visita.cliente.telefone)}</p>
                 </div>
               </div>
 

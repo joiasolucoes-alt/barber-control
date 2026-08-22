@@ -185,29 +185,6 @@ export function rankingServicos(visitas: VisitaDetalhada[]): ItemRankingServico[
   }))
 }
 
-export interface ResumoCliente {
-  totalVisitas: number
-  ultimaVisita: DataISO | null
-  primeiraVisita: DataISO | null
-  servicosFrequentes: ItemRankingServico[]
-  visitas: VisitaDetalhada[]
-}
-
-/** Consolida o histórico de um cliente, já em ordem decrescente de data. */
-export function resumirCliente(clienteId: string, visitas: VisitaDetalhada[]): ResumoCliente {
-  const doCliente = visitas
-    .filter((visita) => visita.cliente_id === clienteId)
-    .sort((a, b) => b.data_atendimento.localeCompare(a.data_atendimento))
-
-  return {
-    totalVisitas: doCliente.length,
-    ultimaVisita: doCliente[0]?.data_atendimento ?? null,
-    primeiraVisita: doCliente[doCliente.length - 1]?.data_atendimento ?? null,
-    servicosFrequentes: rankingServicos(doCliente).slice(0, 5),
-    visitas: doCliente,
-  }
-}
-
 /** Agrupa as visitas de uma data específica (visualização diária). */
 export function visitasDaData(visitas: VisitaDetalhada[], data: DataISO): VisitaDetalhada[] {
   return visitas

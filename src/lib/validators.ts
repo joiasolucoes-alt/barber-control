@@ -15,10 +15,10 @@ export const clienteSchema = z.object({
     .min(3, 'O nome deve ter pelo menos 3 caracteres.')
     .max(120, 'O nome deve ter no máximo 120 caracteres.'),
   telefone: z
-    .string({ required_error: 'Informe o telefone.' })
+    .string()
     .trim()
-    .min(1, 'Informe o telefone.')
-    .refine((valor) => apenasDigitos(valor).length >= 10, {
+    .optional()
+    .refine((valor) => !valor || apenasDigitos(valor).length >= 10, {
       message: 'Telefone incompleto. Use DDD + número.',
     }),
   data_nascimento: dataOpcional,

@@ -93,3 +93,19 @@ export function normalizar(valor: string): string {
 export function pluralizar(quantidade: number, singular: string, plural: string): string {
   return quantidade === 1 ? singular : plural
 }
+
+/**
+ * Compara telefone ignorando a máscara: buscar "11987" encontra "(11) 98765-4321".
+ * Retorna false quando o cliente não tem telefone cadastrado.
+ */
+export function telefoneCombina(telefone: string | null | undefined, termo: string): boolean {
+  if (!telefone) return false
+  const digitosTermo = apenasDigitos(termo)
+  if (!digitosTermo) return false
+  return apenasDigitos(telefone).includes(digitosTermo)
+}
+
+/** Telefone para exibição, com marcador quando o campo está vazio. */
+export function exibirTelefone(telefone: string | null | undefined): string {
+  return telefone && telefone.trim() ? telefone : 'Sem telefone'
+}

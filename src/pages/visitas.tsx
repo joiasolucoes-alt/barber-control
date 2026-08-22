@@ -33,6 +33,7 @@ import {
   formatarDataExtensa,
   normalizar,
   pluralizar,
+  telefoneCombina,
 } from '@/lib/format'
 import { visitasDaData } from '@/lib/metrics'
 import type { VisitaDetalhada } from '@/types'
@@ -65,7 +66,7 @@ export function VisitasPage() {
       if (!termo) return true
       return (
         normalizar(visita.cliente.nome).includes(termo) ||
-        normalizar(visita.cliente.telefone).includes(termo) ||
+        telefoneCombina(visita.cliente.telefone, buscaAdiada) ||
         visita.servicos.some((servico) => normalizar(servico.nome).includes(termo))
       )
     })

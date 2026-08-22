@@ -5,7 +5,7 @@ import { ClienteAvatar } from '@/components/common/cliente-avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { normalizar } from '@/lib/format'
+import { exibirTelefone, normalizar, telefoneCombina } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Cliente } from '@/types'
 
@@ -37,7 +37,7 @@ export function ClienteCombobox({
     const termo = normalizar(busca)
     if (!termo) return clientes
     return clientes.filter(
-      (cliente) => normalizar(cliente.nome).includes(termo) || normalizar(cliente.telefone).includes(termo),
+      (cliente) => normalizar(cliente.nome).includes(termo) || telefoneCombina(cliente.telefone, busca),
     )
   }, [busca, clientes])
 
@@ -95,7 +95,7 @@ export function ClienteCombobox({
                     <ClienteAvatar nome={cliente.nome} className="h-8 w-8" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{cliente.nome}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{cliente.telefone}</span>
+                      <span className="block truncate text-xs text-muted-foreground">{exibirTelefone(cliente.telefone)}</span>
                     </span>
                     {ativo ? <Check aria-hidden className="h-4 w-4 text-primary" /> : null}
                   </button>

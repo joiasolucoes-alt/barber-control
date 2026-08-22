@@ -76,7 +76,7 @@ export class LocalRepository implements BarberRepository {
       cliente: cliente ?? {
         id: visita.cliente_id,
         nome: 'Cliente removido',
-        telefone: '',
+        telefone: null,
         data_nascimento: null,
         observacoes: null,
         status: 'inativo',
@@ -106,7 +106,7 @@ export class LocalRepository implements BarberRepository {
     const cliente: Cliente = {
       id: novoId(),
       nome: input.nome.trim(),
-      telefone: input.telefone.trim(),
+      telefone: input.telefone?.trim() || null,
       data_nascimento: input.data_nascimento || null,
       observacoes: input.observacoes?.trim() || null,
       status: input.status ?? 'ativo',
@@ -125,7 +125,7 @@ export class LocalRepository implements BarberRepository {
     const atualizado: Cliente = {
       ...atual,
       nome: input.nome.trim(),
-      telefone: input.telefone.trim(),
+      telefone: input.telefone?.trim() || null,
       data_nascimento: input.data_nascimento || null,
       observacoes: input.observacoes?.trim() || null,
       status: input.status ?? atual.status,
