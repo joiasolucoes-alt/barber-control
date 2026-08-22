@@ -11,6 +11,7 @@ import {
 import { ptBR } from 'date-fns/locale'
 
 import { dataISOParaDate, dateParaDataISO } from '@/lib/format'
+import { valorDaVisita } from '@/lib/visitas'
 import type { Cliente, DataISO, VisitaDetalhada } from '@/types'
 import type { PeriodoOpcao } from '@/types/periodo'
 
@@ -94,7 +95,7 @@ export function calcularIndicadores(
   const servicosRealizados = visitasDoPeriodo.reduce((total, visita) => total + visita.servicos.length, 0)
 
   const faturamentoEstimado = visitasDoPeriodo.reduce(
-    (total, visita) => total + visita.servicos.reduce((soma, servico) => soma + (servico.preco ?? 0), 0),
+    (total, visita) => total + valorDaVisita(visita),
     0,
   )
 
@@ -330,7 +331,7 @@ export function rankingServicos(visitas: VisitaDetalhada[]): ItemRankingServico[
         receita: 0,
       }
       atual.total += 1
-      atual.receita += servico.preco ?? 0
+      atual.receita += servico.preco_cobrado ?? 0
       acumulado.set(servico.id, atual)
     })
   })

@@ -11,6 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 const DashboardPage = React.lazy(() =>
   import('@/pages/dashboard').then((modulo) => ({ default: modulo.DashboardPage })),
 )
+const AgendaPage = React.lazy(() =>
+  import('@/pages/agenda').then((modulo) => ({ default: modulo.AgendaPage })),
+)
 const ClientesPage = React.lazy(() =>
   import('@/pages/clientes').then((modulo) => ({ default: modulo.ClientesPage })),
 )
@@ -52,6 +55,7 @@ export default function App() {
           <Routes>
             <Route element={<AppShell />}>
               <Route index element={<React.Suspense fallback={<CarregandoPagina />}><DashboardPage /></React.Suspense>} />
+              <Route path="agenda" element={<React.Suspense fallback={<CarregandoPagina />}><AgendaPage /></React.Suspense>} />
               <Route path="clientes" element={<React.Suspense fallback={<CarregandoPagina />}><ClientesPage /></React.Suspense>} />
               <Route path="clientes/:id" element={<React.Suspense fallback={<CarregandoPagina />}><ClienteDetalhePage /></React.Suspense>} />
               <Route path="visitas" element={<React.Suspense fallback={<CarregandoPagina />}><VisitasPage /></React.Suspense>} />

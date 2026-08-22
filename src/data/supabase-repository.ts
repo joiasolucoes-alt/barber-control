@@ -7,6 +7,7 @@ import type {
   ClienteInput,
   Servico,
   ServicoInput,
+  ServicoRealizado,
   StatusRegistro,
   VisitaDetalhada,
   VisitaInput,
@@ -43,7 +44,14 @@ const visitaRegistroSchema = z.object({
 })
 const visitaComRelacoesSchema = visitaRegistroSchema.extend({
   cliente: clienteRegistroSchema.nullable(),
-  visita_servicos: z.array(z.object({ servico: servicoRegistroSchema.nullable() })).nullable(),
+  visita_servicos: z
+    .array(
+      z.object({
+        preco_cobrado: z.coerce.number().nullable(),
+        servico: servicoRegistroSchema.nullable(),
+      }),
+    )
+    .nullable(),
 })
 
 type VisitaComRelacoes = z.infer<typeof visitaComRelacoesSchema>
@@ -51,7 +59,7 @@ type VisitaComRelacoes = z.infer<typeof visitaComRelacoesSchema>
 const SELECT_VISITA = `
   id, cliente_id, data_atendimento, observacoes, created_at, updated_at,
   cliente:clientes(*),
-  visita_servicos:visita_servicos(servico:servicos(*))
+  visita_servicos:visita_servicos(preco_cobrado, servico:servicos(*))
 `
 
 const TAMANHO_PAGINA = 1000
@@ -80,8 +88,10 @@ export class SupabaseRepository implements BarberRepository {
     }
 
     const servicos = (registro.visita_servicos ?? [])
-      .map((vinculo) => vinculo.servico)
-      .filter((servico): servico is Servico => Boolean(servico))
+      .map((vinculo) =>
+        vinculo.servico ? { ...vinculo.servico, preco_cobrado: vinculo.preco_cobrado } : null,
+      )
+      .filter((servico): servico is ServicoRealizado => Boolean(servico))
 
     return {
       id: registro.id,
@@ -120,9 +130,31 @@ export class SupabaseRepository implements BarberRepository {
 
     // Adiciona primeiro: uma falha nunca apaga os vínculos que já existiam.
     if (paraAdicionar.length > 0) {
+      const { data: servicos, error: erroServicos } = await this.db
+        .from('servicos')
+        .select('id, preco')
+        .in('id', paraAdicionar)
+      if (erroServicos) throw new RepositoryError('Não foi possível consultar os preços dos serviços.', erroServicos)
+
+      const precos = validarResposta(
+        z.array(z.object({ id: z.string(), preco: z.coerce.number().nullable() })),
+        servicos ?? [],
+        'Os preços dos serviços recebidos são inválidos.',
+      )
+      if (precos.length !== paraAdicionar.length) {
+        throw new RepositoryError('Um dos serviços selecionados não existe mais.')
+      }
+      const precoPorServico = new Map(precos.map((servico) => [servico.id, servico.preco]))
+
       const { error } = await this.db
         .from('visita_servicos')
-        .insert(paraAdicionar.map((servicoId) => ({ visita_id: visitaId, servico_id: servicoId })))
+        .insert(
+          paraAdicionar.map((servicoId) => ({
+            visita_id: visitaId,
+            servico_id: servicoId,
+            preco_cobrado: precoPorServico.get(servicoId) ?? null,
+          })),
+        )
       if (error) throw new RepositoryError('Não foi possível vincular os serviços à visita.', error)
     }
 

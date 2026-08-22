@@ -20,7 +20,7 @@ export function MobileBottomNav({ aoNovaVisita }: { aoNovaVisita: () => void }) 
           end={item.exato}
           className={({ isActive }) =>
             cn(
-              'relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 text-[10px] font-medium transition-colors',
+              'relative flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 text-[9px] font-medium transition-colors min-[380px]:text-[10px]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
               isActive ? 'text-gold-600 dark:text-gold-300' : 'text-muted-foreground hover:text-foreground',
             )
@@ -30,7 +30,7 @@ export function MobileBottomNav({ aoNovaVisita }: { aoNovaVisita: () => void }) 
             <>
               <span
                 className={cn(
-                  'flex h-7 w-12 items-center justify-center rounded-full transition-colors',
+                  'flex h-7 w-10 items-center justify-center rounded-full transition-colors min-[380px]:w-12',
                   isActive && 'bg-primary/15',
                 )}
               >
@@ -49,15 +49,15 @@ export function MobileBottomNav({ aoNovaVisita }: { aoNovaVisita: () => void }) 
       aria-label="Navegação principal no celular"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      <div className="grid h-16 grid-cols-5">
+      <div className="grid h-16 grid-cols-6">
         {links(primeiros)}
-        <div className="relative flex flex-col items-center justify-end pb-1 text-[10px] font-medium text-primary">
+        <div className="relative flex flex-col items-center justify-end pb-1 text-[9px] font-medium text-primary min-[380px]:text-[10px]">
           <Button
             type="button"
             size="icon"
             aria-label="Registrar nova visita"
             onClick={aoNovaVisita}
-            className="absolute -top-5 h-14 w-14 rounded-full border-4 border-background shadow-lg shadow-black/30 sm:h-14 sm:w-14"
+            className="absolute -top-4 h-12 w-12 rounded-full border-4 border-background shadow-lg shadow-black/30 min-[380px]:-top-5 min-[380px]:h-14 min-[380px]:w-14"
           >
             <Plus aria-hidden className="h-6 w-6" />
           </Button>

@@ -224,6 +224,7 @@ export function gerarBaseSimulada(hoje = new Date()): BaseSimulada {
           id: `vs-${sequencia}-${indice + 1}`,
           visita_id: visitaId,
           servico_id: servico.id,
+          preco_cobrado: servico.preco,
         })
       })
     }

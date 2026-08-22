@@ -56,7 +56,7 @@ export function ClientesPage() {
   const { clientes, visitas, carregando, erro, recarregar, alterarStatusCliente, excluirCliente } = useBarberData()
 
   const [busca, setBusca] = React.useState('')
-  const [filtroStatus, setFiltroStatus] = React.useState<FiltroStatus>('ativo')
+  const [filtroStatus, setFiltroStatus] = React.useState<FiltroStatus>('todos')
   const [filtroSituacao, setFiltroSituacao] = React.useState<FiltroSituacao>('todas')
   const [ordenacao, setOrdenacao] = React.useState<Ordenacao>('nome')
   const [formAberto, setFormAberto] = React.useState(false)

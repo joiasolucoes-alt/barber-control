@@ -6,6 +6,7 @@ import {
   INTERVALO_PADRAO_DIAS,
   type AnaliseCliente,
 } from '@/lib/clientes-analise'
+import { resumirAgendaDia, resumirAgendaMes } from '@/lib/agenda'
 import { dataISOValida } from '@/lib/format'
 import {
   calcularTaxasRetorno,
@@ -14,7 +15,7 @@ import {
   type Indicadores,
 } from '@/lib/metrics'
 import { clienteSchema, visitaSchema } from '@/lib/validators'
-import type { Cliente, Servico, VisitaDetalhada } from '@/types'
+import type { Cliente, ServicoRealizado, VisitaDetalhada } from '@/types'
 
 const timestamp = '2026-01-01T12:00:00.000Z'
 
@@ -31,7 +32,7 @@ function cliente(id = 'cliente-1'): Cliente {
   }
 }
 
-const corte: Servico = {
+const corte: ServicoRealizado = {
   id: 'servico-1',
   nome: 'Corte',
   descricao: null,
@@ -40,6 +41,7 @@ const corte: Servico = {
   status: 'ativo',
   created_at: timestamp,
   updated_at: timestamp,
+  preco_cobrado: 50,
 }
 
 function visita(clienteRegistro: Cliente, data: string, id = data): VisitaDetalhada {
@@ -184,5 +186,36 @@ describe('indicadores do dashboard', () => {
 
     expect(comparativo?.visitasNoPeriodo.percentual).toBeNull()
     expect(comparativo?.clientesUnicosNoPeriodo.percentual).toBe(0)
+  })
+})
+
+describe('agenda de atendimentos', () => {
+  it('separa clientes únicos da quantidade de visitas e soma os preços históricos', () => {
+    const a = cliente('a')
+    const b = cliente('b')
+    const visitas = [
+      visita(a, '2026-08-10', 'a-1'),
+      visita(a, '2026-08-10', 'a-2'),
+      visita(b, '2026-08-10', 'b-1'),
+    ]
+    visitas[1].servicos[0] = { ...corte, preco: 90, preco_cobrado: 55 }
+
+    const dia = resumirAgendaDia(visitas, '2026-08-10')
+
+    expect(dia.clientes).toBe(2)
+    expect(dia.atendimentos).toBe(3)
+    expect(dia.receita).toBe(155)
+  })
+
+  it('consolida apenas as visitas do mês selecionado', () => {
+    const registro = cliente()
+    const agosto = resumirAgendaMes(
+      [visita(registro, '2026-07-31'), visita(registro, '2026-08-01'), visita(registro, '2026-08-31')],
+      new Date(2026, 7, 15),
+    )
+
+    expect(agosto.atendimentos).toBe(2)
+    expect(agosto.receita).toBe(100)
+    expect(agosto.dias.size).toBe(2)
   })
 })

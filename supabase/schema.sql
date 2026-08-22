@@ -90,8 +90,38 @@ create table if not exists public.visita_servicos (
   id uuid primary key default gen_random_uuid(),
   visita_id uuid not null references public.visitas (id) on delete cascade,
   servico_id uuid not null references public.servicos (id) on delete restrict,
+  preco_cobrado numeric(10,2),
   unique (visita_id, servico_id)
 );
+
+-- Bancos criados antes da agenda ainda não possuem o preço histórico. O bloco
+-- adiciona e preenche a coluna uma única vez, sem regravar visitas futuras.
+do $$
+declare
+  coluna_ja_existia boolean;
+begin
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'visita_servicos'
+      and column_name = 'preco_cobrado'
+  ) into coluna_ja_existia;
+
+  if not coluna_ja_existia then
+    alter table public.visita_servicos add column preco_cobrado numeric(10,2);
+
+    update public.visita_servicos as vinculo
+    set preco_cobrado = servico.preco
+    from public.servicos as servico
+    where servico.id = vinculo.servico_id;
+  end if;
+end;
+$$;
+
+alter table public.visita_servicos drop constraint if exists visita_servicos_preco_cobrado_check;
+alter table public.visita_servicos add constraint visita_servicos_preco_cobrado_check
+  check (preco_cobrado is null or preco_cobrado between 0 and 999999.99);
 
 create index if not exists visita_servicos_visita_idx on public.visita_servicos (visita_id);
 create index if not exists visita_servicos_servico_idx on public.visita_servicos (servico_id);

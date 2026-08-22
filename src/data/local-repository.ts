@@ -7,6 +7,7 @@ import type {
   ClienteInput,
   Servico,
   ServicoInput,
+  ServicoRealizado,
   StatusRegistro,
   Visita,
   VisitaDetalhada,
@@ -19,7 +20,7 @@ const CHAVE_STORAGE = 'barber-control:v1'
 const LATENCIA_MS = 180
 
 const statusSchema = z.enum(['ativo', 'inativo'])
-const basePersistidaSchema: z.ZodType<BaseSimulada> = z.object({
+const basePersistidaSchema = z.object({
   clientes: z.array(
     z.object({
       id: z.string(),
@@ -59,9 +60,22 @@ const basePersistidaSchema: z.ZodType<BaseSimulada> = z.object({
       id: z.string(),
       visita_id: z.string(),
       servico_id: z.string(),
+      preco_cobrado: z.number().nullable().optional(),
     }),
   ),
 })
+
+function migrarBasePersistida(base: z.infer<typeof basePersistidaSchema>): BaseSimulada {
+  const precoPorServico = new Map(base.servicos.map((servico) => [servico.id, servico.preco]))
+  return {
+    ...base,
+    visitaServicos: base.visitaServicos.map((vinculo) => ({
+      ...vinculo,
+      preco_cobrado:
+        vinculo.preco_cobrado !== undefined ? vinculo.preco_cobrado : (precoPorServico.get(vinculo.servico_id) ?? null),
+    })),
+  }
+}
 
 function esperar<T>(valor: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(valor), LATENCIA_MS))
@@ -82,7 +96,11 @@ function carregar(): BaseSimulada {
     const bruto = window.localStorage.getItem(CHAVE_STORAGE)
     if (bruto) {
       const resultado = basePersistidaSchema.safeParse(JSON.parse(bruto))
-      if (resultado.success) return resultado.data
+      if (resultado.success) {
+        const base = migrarBasePersistida(resultado.data)
+        persistir(base)
+        return base
+      }
     }
   } catch {
     // Storage corrompido ou indisponível: recomeça a partir da base simulada.
@@ -113,8 +131,11 @@ export class LocalRepository implements BarberRepository {
     const cliente = this.base.clientes.find((item) => item.id === visita.cliente_id)
     const vinculos = this.base.visitaServicos.filter((item) => item.visita_id === visita.id)
     const servicos = vinculos
-      .map((vinculo) => this.base.servicos.find((servico) => servico.id === vinculo.servico_id))
-      .filter((servico): servico is Servico => Boolean(servico))
+      .map((vinculo) => {
+        const servico = this.base.servicos.find((item) => item.id === vinculo.servico_id)
+        return servico ? { ...servico, preco_cobrado: vinculo.preco_cobrado } : null
+      })
+      .filter((servico): servico is ServicoRealizado => Boolean(servico))
 
     return {
       ...visita,
@@ -133,12 +154,22 @@ export class LocalRepository implements BarberRepository {
   }
 
   private trocarServicos(visitaId: string, servicoIds: string[]) {
-    this.base.visitaServicos = this.base.visitaServicos.filter((item) => item.visita_id !== visitaId)
-    const novos: VisitaServico[] = servicoIds.map((servicoId) => ({
-      id: novoId(),
-      visita_id: visitaId,
-      servico_id: servicoId,
-    }))
+    const idsDesejados = new Set(servicoIds)
+    const existentes = this.base.visitaServicos.filter((item) => item.visita_id === visitaId)
+    const idsExistentes = new Set(existentes.map((item) => item.servico_id))
+
+    this.base.visitaServicos = this.base.visitaServicos.filter(
+      (item) => item.visita_id !== visitaId || idsDesejados.has(item.servico_id),
+    )
+
+    const novos: VisitaServico[] = servicoIds
+      .filter((servicoId) => !idsExistentes.has(servicoId))
+      .map((servicoId) => ({
+        id: novoId(),
+        visita_id: visitaId,
+        servico_id: servicoId,
+        preco_cobrado: this.base.servicos.find((servico) => servico.id === servicoId)?.preco ?? null,
+      }))
     this.base.visitaServicos.push(...novos)
   }
 

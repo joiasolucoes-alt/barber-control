@@ -33,6 +33,7 @@ export default defineConfig({
           },
         ],
         shortcuts: [
+          { name: 'Agenda', short_name: 'Agenda', url: '/agenda' },
           { name: 'Clientes', short_name: 'Clientes', url: '/clientes' },
           { name: 'Visitas', short_name: 'Visitas', url: '/visitas' },
         ],

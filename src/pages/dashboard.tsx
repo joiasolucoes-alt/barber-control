@@ -36,7 +36,7 @@ import { obterPeriodo, type PeriodoChave } from '@/types/periodo'
 
 export function DashboardPage() {
   const { clientes, visitas, carregando, erro, recarregar } = useBarberData()
-  const [periodoChave, setPeriodoChave] = React.useState<PeriodoChave>('30d')
+  const [periodoChave, setPeriodoChave] = React.useState<PeriodoChave>('total')
 
   const periodo = obterPeriodo(periodoChave)
 

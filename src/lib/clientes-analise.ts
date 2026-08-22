@@ -2,6 +2,7 @@ import { differenceInCalendarDays } from 'date-fns'
 
 import { apenasDigitos, dataISOParaDate, dateParaDataISO } from '@/lib/format'
 import { rankingServicos, type ItemRankingServico } from '@/lib/metrics'
+import { valorDaVisita } from '@/lib/visitas'
 import type { Cliente, DataISO, VisitaDetalhada } from '@/types'
 
 /**
@@ -114,10 +115,7 @@ export function analisarCliente(
     }
   }
 
-  const totalGasto = visitas.reduce(
-    (total, visita) => total + visita.servicos.reduce((soma, servico) => soma + (servico.preco ?? 0), 0),
-    0,
-  )
+  const totalGasto = visitas.reduce((total, visita) => total + valorDaVisita(visita), 0)
 
   return {
     cliente,
