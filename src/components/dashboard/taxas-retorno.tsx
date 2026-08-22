@@ -42,7 +42,7 @@ export function TaxasRetorno({ taxas, carregando }: TaxasRetornoProps) {
                       {pluralizar(taxa.elegiveis, 'cliente elegível', 'clientes elegíveis')}
                     </p>
                   </div>
-                  <span className="heading-display text-2xl font-semibold tabular-nums">
+                  <span className="metric-number text-2xl">
                     {taxa.percentual === null ? '—' : formatarPercentual(taxa.percentual)}
                   </span>
                 </div>

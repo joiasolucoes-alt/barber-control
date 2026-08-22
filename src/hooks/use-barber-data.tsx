@@ -26,9 +26,11 @@ interface ContextoDados extends EstadoDados {
   criarCliente: (input: ClienteInput) => Promise<Cliente>
   atualizarCliente: (id: string, input: ClienteInput) => Promise<Cliente>
   alterarStatusCliente: (id: string, status: StatusRegistro) => Promise<Cliente>
+  excluirCliente: (id: string) => Promise<void>
   criarServico: (input: ServicoInput) => Promise<Servico>
   atualizarServico: (id: string, input: ServicoInput) => Promise<Servico>
   alterarStatusServico: (id: string, status: StatusRegistro) => Promise<Servico>
+  excluirServico: (id: string) => Promise<void>
   criarVisita: (input: VisitaInput) => Promise<VisitaDetalhada>
   atualizarVisita: (id: string, input: VisitaInput) => Promise<VisitaDetalhada>
   excluirVisita: (id: string) => Promise<void>
@@ -110,6 +112,10 @@ export function BarberDataProvider({ children }: { children: React.ReactNode }) 
         await Promise.all([recarregarClientes(), recarregarVisitas()])
         return cliente
       },
+      excluirCliente: async (id) => {
+        await repository.excluirCliente(id)
+        await Promise.all([recarregarClientes(), recarregarVisitas()])
+      },
 
       criarServico: async (input) => {
         const servico = await repository.criarServico(input)
@@ -125,6 +131,10 @@ export function BarberDataProvider({ children }: { children: React.ReactNode }) 
         const servico = await repository.alterarStatusServico(id, status)
         await Promise.all([recarregarServicos(), recarregarVisitas()])
         return servico
+      },
+      excluirServico: async (id) => {
+        await repository.excluirServico(id)
+        await Promise.all([recarregarServicos(), recarregarVisitas()])
       },
 
       criarVisita: async (input) => {

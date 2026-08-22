@@ -1,16 +1,17 @@
 import * as React from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
-import { Database, HardDrive, Menu, Moon, Plus, Sun } from 'lucide-react'
+import { Database, HardDrive, Moon, Plus, Sun, WifiOff } from 'lucide-react'
 
 import { Logo } from '@/components/layout/logo'
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
 import { NAVEGACAO } from '@/components/layout/navigation'
 import { SidebarNav } from '@/components/layout/sidebar-nav'
 import { VisitaFormDialog } from '@/components/visitas/visita-form-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { useBarberData } from '@/hooks/use-barber-data'
+import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTema } from '@/hooks/use-theme'
 
 function FonteDeDados() {
@@ -50,14 +51,14 @@ function BotaoTema() {
 }
 
 export function AppShell() {
-  const [menuAberto, setMenuAberto] = React.useState(false)
   const [visitaAberta, setVisitaAberta] = React.useState(false)
   const localizacao = useLocation()
+  const online = useOnlineStatus()
 
   const tituloAtual =
     NAVEGACAO.find((item) =>
       item.exato ? localizacao.pathname === item.para : localizacao.pathname.startsWith(item.para),
-    )?.rotulo ?? 'Barber Control'
+    )?.rotulo ?? 'André Garcia'
 
   return (
     <div className="min-h-dvh bg-background">
@@ -70,7 +71,7 @@ export function AppShell() {
 
       {/* Menu lateral fixo no desktop */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-card px-4 py-5 lg:flex">
-        <Logo />
+        <Logo className="w-full" />
         <div className="gold-divider my-5" />
         <SidebarNav />
         <div className="mt-auto space-y-3 pt-6">
@@ -82,74 +83,48 @@ export function AppShell() {
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-          <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
-            <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="lg:hidden" aria-label="Abrir menu">
-                  <Menu />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72">
-                <SheetTitle className="sr-only">Menu principal</SheetTitle>
-                <Logo />
-                <div className="gold-divider my-5" />
-                <SidebarNav aoNavegar={() => setMenuAberto(false)} />
-                <div className="mt-auto space-y-3 pt-6">
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={() => {
-                      setMenuAberto(false)
-                      setVisitaAberta(true)
-                    }}
-                  >
-                    <Plus aria-hidden /> Registrar visita
-                  </Button>
-                  <FonteDeDados />
-                </div>
-              </SheetContent>
-            </Sheet>
-
+        <header className="sticky top-0 z-30 border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur">
+          <div className="flex min-h-[4.75rem] items-center gap-3 px-3 py-2 sm:px-6 lg:min-h-16 lg:py-0">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <span className="lg:hidden">
-                <Logo compacto />
+                <Logo compacto className="w-24 shrink-0 min-[360px]:w-28" />
               </span>
-              <span className="hidden min-w-0 lg:block">
-                <span className="heading-display block truncate text-sm font-semibold">{tituloAtual}</span>
-                <span className="block text-xs text-muted-foreground">Controle de clientes e atendimentos</span>
+              <span className="min-w-0">
+                <span className="heading-display block truncate text-lg font-bold leading-none sm:text-xl lg:text-sm lg:font-semibold">
+                  {tituloAtual}
+                </span>
+                <span className="hidden text-xs text-muted-foreground sm:block">
+                  Controle de clientes e atendimentos
+                </span>
               </span>
             </div>
 
             <Badge variant="outline" className="hidden sm:inline-flex">
               Registro de atendimentos
             </Badge>
+            {!online ? (
+              <Badge variant="danger" aria-live="polite" className="gap-1.5">
+                <WifiOff aria-hidden className="h-3.5 w-3.5" /> Sem conexão
+              </Badge>
+            ) : null}
             <Separator orientation="vertical" className="hidden h-6 sm:block" />
             <BotaoTema />
-            <Button type="button" className="hidden sm:inline-flex" onClick={() => setVisitaAberta(true)}>
+            <Button type="button" className="hidden lg:inline-flex" onClick={() => setVisitaAberta(true)}>
               <Plus aria-hidden /> Nova visita
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              className="sm:hidden"
-              aria-label="Registrar visita"
-              onClick={() => setVisitaAberta(true)}
-            >
-              <Plus />
             </Button>
           </div>
         </header>
 
-        <main id="conteudo-principal" className="animate-fade-in px-4 py-6 sm:px-6 lg:py-8">
+        <main id="conteudo-principal" className="animate-fade-in px-3 py-5 pb-36 sm:px-6 sm:py-6 lg:py-8">
           <Outlet />
         </main>
 
-        <footer className="border-t border-border px-4 py-6 text-xs text-muted-foreground sm:px-6">
-          Barber Control · sistema de controle de clientes e atendimentos realizados.
+        <footer className="border-t border-border px-4 py-6 pb-28 text-xs text-muted-foreground sm:px-6 lg:pb-6">
+          André Garcia Barber Shop · controle de clientes e atendimentos realizados.
         </footer>
       </div>
 
+      <MobileBottomNav aoNovaVisita={() => setVisitaAberta(true)} />
       <VisitaFormDialog aberto={visitaAberta} aoMudarAberto={setVisitaAberta} />
     </div>
   )

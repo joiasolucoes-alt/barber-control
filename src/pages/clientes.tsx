@@ -1,8 +1,9 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, MoreHorizontal, Pencil, Plus, UserCheck, UserRoundX, Users } from 'lucide-react'
+import { Eye, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, UserRoundX, Users } from 'lucide-react'
 
 import { BotaoWhatsApp } from '@/components/clientes/botao-whatsapp'
+import { ClienteMobileCard } from '@/components/clientes/cliente-mobile-card'
 import { ClienteFormDialog } from '@/components/clientes/cliente-form-dialog'
 import { CardAniversariantes, CardPrecisamDeAtencao } from '@/components/clientes/painel-retencao'
 import { SituacaoBadge } from '@/components/clientes/situacao-badge'
@@ -52,7 +53,7 @@ const ORDENACOES: Array<{ valor: Ordenacao; rotulo: string }> = [
 ]
 
 export function ClientesPage() {
-  const { clientes, visitas, carregando, erro, recarregar, alterarStatusCliente } = useBarberData()
+  const { clientes, visitas, carregando, erro, recarregar, alterarStatusCliente, excluirCliente } = useBarberData()
 
   const [busca, setBusca] = React.useState('')
   const [filtroStatus, setFiltroStatus] = React.useState<FiltroStatus>('ativo')
@@ -61,6 +62,7 @@ export function ClientesPage() {
   const [formAberto, setFormAberto] = React.useState(false)
   const [clienteEmEdicao, setClienteEmEdicao] = React.useState<Cliente | null>(null)
   const [clienteParaInativar, setClienteParaInativar] = React.useState<Cliente | null>(null)
+  const [clienteParaExcluir, setClienteParaExcluir] = React.useState<Cliente | null>(null)
 
   const buscaAdiada = useDebounce(busca)
 
@@ -118,6 +120,32 @@ export function ClientesPage() {
     }
   }
 
+  function solicitarExclusao(cliente: Cliente) {
+    const totalVisitas = visitas.filter((visita) => visita.cliente_id === cliente.id).length
+    if (totalVisitas > 0) {
+      toast.warning('Cliente com histórico não pode ser excluído', {
+        description: `${cliente.nome} possui ${totalVisitas} ${pluralizar(totalVisitas, 'visita registrada', 'visitas registradas')}. Inative o cadastro para preservar os relatórios.`,
+      })
+      return
+    }
+    setClienteParaExcluir(cliente)
+  }
+
+  async function confirmarExclusaoCliente() {
+    if (!clienteParaExcluir) return
+    try {
+      await excluirCliente(clienteParaExcluir.id)
+      toast.success('Cliente excluído', {
+        description: `${clienteParaExcluir.nome} foi removido definitivamente.`,
+      })
+      setClienteParaExcluir(null)
+    } catch (falha) {
+      toast.error('Não foi possível excluir o cliente', {
+        description: falha instanceof Error ? falha.message : 'Tente novamente em instantes.',
+      })
+    }
+  }
+
   function limparFiltros() {
     setBusca('')
     setFiltroStatus('todos')
@@ -161,6 +189,7 @@ export function ClientesPage() {
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="clientes-busca">Buscar</Label>
             <SearchInput
+              id="clientes-busca"
               rotulo="Buscar cliente por nome ou telefone"
               placeholder="Nome ou telefone (com ou sem máscara)"
               valor={busca}
@@ -255,7 +284,21 @@ export function ClientesPage() {
           }
         />
       ) : (
-        <Card>
+        <>
+          <div className="space-y-3 md:hidden">
+            {filtrados.map((analise) => (
+              <ClienteMobileCard
+                key={analise.cliente.id}
+                analise={analise}
+                aoEditar={() => abrirEdicao(analise.cliente)}
+                aoInativar={() => setClienteParaInativar(analise.cliente)}
+                aoReativar={() => void alternarStatus(analise.cliente)}
+                aoExcluir={() => solicitarExclusao(analise.cliente)}
+              />
+            ))}
+          </div>
+
+          <Card className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -352,6 +395,10 @@ export function ClientesPage() {
                                 <UserCheck aria-hidden /> Reativar
                               </DropdownMenuItem>
                             )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem destructive onSelect={() => solicitarExclusao(cliente)}>
+                              <Trash2 aria-hidden /> Excluir definitivamente
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -361,7 +408,8 @@ export function ClientesPage() {
               })}
             </TableBody>
           </Table>
-        </Card>
+          </Card>
+        </>
       )}
 
       <ClienteFormDialog aberto={formAberto} aoMudarAberto={setFormAberto} cliente={clienteEmEdicao} />
@@ -385,6 +433,22 @@ export function ClientesPage() {
           if (clienteParaInativar) await alternarStatus(clienteParaInativar)
           setClienteParaInativar(null)
         }}
+      />
+
+      <ConfirmDialog
+        aberto={Boolean(clienteParaExcluir)}
+        aoMudarAberto={(aberto) => {
+          if (!aberto) setClienteParaExcluir(null)
+        }}
+        titulo="Excluir cliente definitivamente?"
+        descricao={
+          <>
+            <strong>{clienteParaExcluir?.nome}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
+          </>
+        }
+        textoConfirmar="Excluir cliente"
+        destrutivo
+        aoConfirmar={confirmarExclusaoCliente}
       />
     </div>
   )

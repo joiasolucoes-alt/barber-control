@@ -252,5 +252,5 @@ export function primeiroNome(nome: string): string {
 }
 
 export function mensagemRetorno(cliente: Cliente): string {
-  return `Olá, ${primeiroNome(cliente.nome)}! Aqui é da barbearia. Faz um tempo que você não passa por aqui — que tal dar um trato no visual?`
+  return `Olá, ${primeiroNome(cliente.nome)}! Aqui é da André Garcia Barber Shop. Faz um tempo que você não passa por aqui — que tal dar um trato no visual?`
 }

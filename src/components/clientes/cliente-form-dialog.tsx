@@ -112,7 +112,15 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
 
         <form noValidate onSubmit={handleSubmit(enviar)} className="space-y-4">
           <Field id="cliente-nome" rotulo="Nome completo" obrigatorio erro={errors.nome?.message}>
-            {(props) => <Input {...props} {...register('nome')} placeholder="Ex.: Rafael Almeida" autoComplete="name" />}
+            {(props) => (
+              <Input
+                {...props}
+                {...register('nome')}
+                placeholder="Ex.: Rafael Almeida"
+                autoComplete="name"
+                maxLength={120}
+              />
+            )}
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -127,6 +135,7 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
                   {...props}
                   {...register('telefone')}
                   inputMode="tel"
+                  autoComplete="tel"
                   placeholder="(11) 98888-7777"
                   onChange={(evento) => setValue('telefone', formatarTelefone(evento.target.value), { shouldValidate: true })}
                 />
@@ -151,6 +160,7 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
                       valor={field.value || null}
                       aoMudar={(valor) => field.onChange(valor ?? '')}
                       placeholder="Selecione a data"
+                      bloquearFuturo
                     />
                   )}
                 />
@@ -160,7 +170,12 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
 
           <Field id="cliente-observacoes" rotulo="Observações" erro={errors.observacoes?.message} dica="Opcional">
             {(props) => (
-              <Textarea {...props} {...register('observacoes')} placeholder="Preferências de corte, indicações, alergias..." />
+              <Textarea
+                {...props}
+                {...register('observacoes')}
+                placeholder="Preferências de corte, indicações, alergias..."
+                maxLength={500}
+              />
             )}
           </Field>
 

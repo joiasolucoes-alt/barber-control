@@ -102,17 +102,24 @@ export function ServicoFormDialog({ aberto, aoMudarAberto, servico }: ServicoFor
 
         <form noValidate onSubmit={handleSubmit(enviar)} className="space-y-4">
           <Field id="servico-nome" rotulo="Nome" obrigatorio erro={errors.nome?.message}>
-            {(props) => <Input {...props} {...register('nome')} placeholder="Ex.: Corte de cabelo" />}
+            {(props) => <Input {...props} {...register('nome')} placeholder="Ex.: Corte de cabelo" maxLength={80} />}
           </Field>
 
           <Field id="servico-descricao" rotulo="Descrição" erro={errors.descricao?.message} dica="Opcional">
-            {(props) => <Textarea {...props} {...register('descricao')} placeholder="O que está incluído no serviço" />}
+            {(props) => (
+              <Textarea
+                {...props}
+                {...register('descricao')}
+                placeholder="O que está incluído no serviço"
+                maxLength={300}
+              />
+            )}
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field id="servico-preco" rotulo="Preço (R$)" erro={errors.preco?.message} dica="Opcional">
               {(props) => (
-                <Input {...props} {...register('preco')} inputMode="decimal" placeholder="45,00" />
+                <Input {...props} {...register('preco')} inputMode="decimal" placeholder="45,00" maxLength={10} />
               )}
             </Field>
 
@@ -123,7 +130,13 @@ export function ServicoFormDialog({ aberto, aoMudarAberto, servico }: ServicoFor
               dica="Opcional"
             >
               {(props) => (
-                <Input {...props} {...register('duracao_estimada')} inputMode="numeric" placeholder="40" />
+                <Input
+                  {...props}
+                  {...register('duracao_estimada')}
+                  inputMode="numeric"
+                  placeholder="40"
+                  maxLength={4}
+                />
               )}
             </Field>
           </div>

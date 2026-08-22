@@ -1,6 +1,8 @@
-# Barber Control
+# André Garcia Barber Shop · Barber Control
 
 Sistema web responsivo para **controle de clientes e atendimentos já realizados** em uma barbearia.
+
+A interface usa a identidade visual oficial da **André Garcia Barber Shop** e pode ser instalada no celular como PWA.
 
 > Este projeto **não é uma plataforma de agendamento**. Não existem reservas, horários
 > disponíveis, confirmação de presença ou atendimentos futuros. Tudo o que é registrado
@@ -46,6 +48,7 @@ Outros scripts:
 npm run build     # build de produção
 npm run preview   # serve o build
 npm run lint      # checagem de tipos (tsc --noEmit)
+npm run test      # testes automatizados das regras de negócio
 ```
 
 ## Camada de dados
@@ -63,13 +66,9 @@ de ambiente — nenhuma tela precisa mudar.
 
 ### Supabase
 
-O projeto **`barber-control`** já está criado (organização Trevo Studio, região
-`sa-east-1` / São Paulo) com o schema aplicado e uma base de demonstração carregada:
-28 clientes, 5 serviços, 905 visitas e 1.226 vínculos visita↔serviço.
-
-Migrations aplicadas: `initial_schema`, `rls_acesso_publico_v1`, `servicos_iniciais`,
-`restringe_execucao_set_updated_at`. O equivalente consolidado está em
-[`supabase/schema.sql`](supabase/schema.sql).
+O schema consolidado e versionado está em [`supabase/schema.sql`](supabase/schema.sql).
+O projeto remoto deve ser ativado, auditado e receber esse schema como migration antes
+de ser usado em produção; o repositório não presume que o estado remoto esteja sincronizado.
 
 Para rodar em outra máquina, copie `.env.example` para `.env` e preencha:
 
@@ -86,6 +85,8 @@ está ativa.
 > (`using (true)`) para a role `anon`: quem tiver a chave publicável lê e escreve tudo.
 > Ao adicionar login, troque as policies `*_acesso_publico_v1` por regras baseadas em
 > `auth.uid()` antes de expor a aplicação publicamente.
+
+O schema declara `GRANT`s de Data API explicitamente, conforme a mudança de padrão do Supabase em 2026. As permissões e as policies RLS devem ser migradas juntas quando o login for introduzido.
 
 ## Modelo de dados
 

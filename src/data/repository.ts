@@ -22,11 +22,13 @@ export interface BarberRepository {
   criarCliente(input: ClienteInput): Promise<Cliente>
   atualizarCliente(id: string, input: ClienteInput): Promise<Cliente>
   alterarStatusCliente(id: string, status: StatusRegistro): Promise<Cliente>
+  excluirCliente(id: string): Promise<void>
 
   listarServicos(): Promise<Servico[]>
   criarServico(input: ServicoInput): Promise<Servico>
   atualizarServico(id: string, input: ServicoInput): Promise<Servico>
   alterarStatusServico(id: string, status: StatusRegistro): Promise<Servico>
+  excluirServico(id: string): Promise<void>
 
   listarVisitas(): Promise<VisitaDetalhada[]>
   criarVisita(input: VisitaInput): Promise<VisitaDetalhada>

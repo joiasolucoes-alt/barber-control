@@ -1,4 +1,6 @@
-import { agora, novoId, type BarberRepository } from '@/data/repository'
+import { z } from 'zod'
+
+import { agora, novoId, RepositoryError, type BarberRepository } from '@/data/repository'
 import { gerarBaseSimulada, type BaseSimulada } from '@/data/seed'
 import type {
   Cliente,
@@ -15,6 +17,51 @@ import type {
 const CHAVE_STORAGE = 'barber-control:v1'
 /** Pequena latência artificial para exercitar os estados de carregamento. */
 const LATENCIA_MS = 180
+
+const statusSchema = z.enum(['ativo', 'inativo'])
+const basePersistidaSchema: z.ZodType<BaseSimulada> = z.object({
+  clientes: z.array(
+    z.object({
+      id: z.string(),
+      nome: z.string(),
+      telefone: z.string().nullable(),
+      data_nascimento: z.string().nullable(),
+      observacoes: z.string().nullable(),
+      status: statusSchema,
+      created_at: z.string(),
+      updated_at: z.string(),
+    }),
+  ),
+  servicos: z.array(
+    z.object({
+      id: z.string(),
+      nome: z.string(),
+      descricao: z.string().nullable(),
+      preco: z.number().nullable(),
+      duracao_estimada: z.number().nullable(),
+      status: statusSchema,
+      created_at: z.string(),
+      updated_at: z.string(),
+    }),
+  ),
+  visitas: z.array(
+    z.object({
+      id: z.string(),
+      cliente_id: z.string(),
+      data_atendimento: z.string(),
+      observacoes: z.string().nullable(),
+      created_at: z.string(),
+      updated_at: z.string(),
+    }),
+  ),
+  visitaServicos: z.array(
+    z.object({
+      id: z.string(),
+      visita_id: z.string(),
+      servico_id: z.string(),
+    }),
+  ),
+})
 
 function esperar<T>(valor: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(valor), LATENCIA_MS))
@@ -34,10 +81,8 @@ function carregar(): BaseSimulada {
   try {
     const bruto = window.localStorage.getItem(CHAVE_STORAGE)
     if (bruto) {
-      const dados = JSON.parse(bruto) as BaseSimulada
-      if (dados.clientes && dados.servicos && dados.visitas && dados.visitaServicos) {
-        return dados
-      }
+      const resultado = basePersistidaSchema.safeParse(JSON.parse(bruto))
+      if (resultado.success) return resultado.data
     }
   } catch {
     // Storage corrompido ou indisponível: recomeça a partir da base simulada.
@@ -97,6 +142,19 @@ export class LocalRepository implements BarberRepository {
     this.base.visitaServicos.push(...novos)
   }
 
+  private validarVisita(input: VisitaInput) {
+    const cliente = this.base.clientes.find((item) => item.id === input.cliente_id)
+    if (!cliente) throw new RepositoryError('O cliente selecionado não existe mais.')
+
+    const idsUnicos = new Set(input.servico_ids)
+    if (idsUnicos.size !== input.servico_ids.length) {
+      throw new RepositoryError('A visita contém serviços duplicados.')
+    }
+
+    const todosExistem = input.servico_ids.every((id) => this.base.servicos.some((servico) => servico.id === id))
+    if (!todosExistem) throw new RepositoryError('Um dos serviços selecionados não existe mais.')
+  }
+
   async listarClientes(): Promise<Cliente[]> {
     return esperar([...this.base.clientes].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')))
   }
@@ -143,6 +201,15 @@ export class LocalRepository implements BarberRepository {
     this.base.clientes[indice] = atualizado
     this.salvar()
     return esperar(atualizado)
+  }
+
+  async excluirCliente(id: string): Promise<void> {
+    if (this.base.visitas.some((visita) => visita.cliente_id === id)) {
+      throw new RepositoryError('Este cliente possui atendimentos. Inative-o para preservar o histórico.')
+    }
+    this.base.clientes = this.base.clientes.filter((cliente) => cliente.id !== id)
+    this.salvar()
+    return esperar(undefined)
   }
 
   async listarServicos(): Promise<Servico[]> {
@@ -193,6 +260,15 @@ export class LocalRepository implements BarberRepository {
     return esperar(atualizado)
   }
 
+  async excluirServico(id: string): Promise<void> {
+    if (this.base.visitaServicos.some((vinculo) => vinculo.servico_id === id)) {
+      throw new RepositoryError('Este serviço possui atendimentos. Inative-o para preservar o histórico.')
+    }
+    this.base.servicos = this.base.servicos.filter((servico) => servico.id !== id)
+    this.salvar()
+    return esperar(undefined)
+  }
+
   async listarVisitas(): Promise<VisitaDetalhada[]> {
     const detalhadas = this.base.visitas
       .map((visita) => this.detalhar(visita))
@@ -206,6 +282,7 @@ export class LocalRepository implements BarberRepository {
   }
 
   async criarVisita(input: VisitaInput): Promise<VisitaDetalhada> {
+    this.validarVisita(input)
     const timestamp = agora()
     const visita: Visita = {
       id: novoId(),
@@ -224,6 +301,7 @@ export class LocalRepository implements BarberRepository {
   async atualizarVisita(id: string, input: VisitaInput): Promise<VisitaDetalhada> {
     const indice = this.base.visitas.findIndex((visita) => visita.id === id)
     if (indice < 0) throw new Error('Visita não encontrada.')
+    this.validarVisita(input)
     const atualizada: Visita = {
       ...this.base.visitas[indice],
       cliente_id: input.cliente_id,

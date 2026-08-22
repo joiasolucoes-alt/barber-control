@@ -26,6 +26,19 @@ create table if not exists public.clientes (
 create index if not exists clientes_nome_idx on public.clientes (nome);
 create index if not exists clientes_telefone_idx on public.clientes (telefone);
 
+alter table public.clientes drop constraint if exists clientes_nome_tamanho_check;
+alter table public.clientes add constraint clientes_nome_tamanho_check
+  check (char_length(trim(nome)) between 3 and 120);
+alter table public.clientes drop constraint if exists clientes_telefone_tamanho_check;
+alter table public.clientes add constraint clientes_telefone_tamanho_check
+  check (telefone is null or char_length(telefone) <= 25);
+alter table public.clientes drop constraint if exists clientes_nascimento_check;
+alter table public.clientes add constraint clientes_nascimento_check
+  check (data_nascimento is null or data_nascimento <= current_date);
+alter table public.clientes drop constraint if exists clientes_observacoes_tamanho_check;
+alter table public.clientes add constraint clientes_observacoes_tamanho_check
+  check (observacoes is null or char_length(observacoes) <= 500);
+
 -- Serviços ------------------------------------------------------------------
 create table if not exists public.servicos (
   id uuid primary key default gen_random_uuid(),
@@ -37,6 +50,20 @@ create table if not exists public.servicos (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create unique index if not exists servicos_nome_unico_idx on public.servicos (lower(trim(nome)));
+alter table public.servicos drop constraint if exists servicos_nome_tamanho_check;
+alter table public.servicos add constraint servicos_nome_tamanho_check
+  check (char_length(trim(nome)) between 2 and 80);
+alter table public.servicos drop constraint if exists servicos_descricao_tamanho_check;
+alter table public.servicos add constraint servicos_descricao_tamanho_check
+  check (descricao is null or char_length(descricao) <= 300);
+alter table public.servicos drop constraint if exists servicos_preco_check;
+alter table public.servicos add constraint servicos_preco_check
+  check (preco is null or preco between 0 and 999999.99);
+alter table public.servicos drop constraint if exists servicos_duracao_check;
+alter table public.servicos add constraint servicos_duracao_check
+  check (duracao_estimada is null or duracao_estimada between 0 and 1440);
 
 -- Visitas (atendimentos já realizados) --------------------------------------
 create table if not exists public.visitas (
@@ -50,6 +77,13 @@ create table if not exists public.visitas (
 
 create index if not exists visitas_cliente_idx on public.visitas (cliente_id);
 create index if not exists visitas_data_idx on public.visitas (data_atendimento desc);
+
+alter table public.visitas drop constraint if exists visitas_data_check;
+alter table public.visitas add constraint visitas_data_check
+  check (data_atendimento <= current_date);
+alter table public.visitas drop constraint if exists visitas_observacoes_tamanho_check;
+alter table public.visitas add constraint visitas_observacoes_tamanho_check
+  check (observacoes is null or char_length(observacoes) <= 500);
 
 -- Serviços realizados em cada visita (N:N) -----------------------------------
 create table if not exists public.visita_servicos (
@@ -66,7 +100,6 @@ create index if not exists visita_servicos_servico_idx on public.visita_servicos
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
-security definer
 set search_path = ''
 as $$
 begin
@@ -74,6 +107,8 @@ begin
   return new;
 end;
 $$;
+
+revoke execute on function public.set_updated_at() from public, anon, authenticated;
 
 drop trigger if exists clientes_set_updated_at on public.clientes;
 create trigger clientes_set_updated_at before update on public.clientes
@@ -95,6 +130,12 @@ alter table public.clientes enable row level security;
 alter table public.servicos enable row level security;
 alter table public.visitas enable row level security;
 alter table public.visita_servicos enable row level security;
+
+-- A exposição é explícita para compatibilidade com os novos padrões da Data API.
+-- Este grant continua público apenas enquanto a aplicação não possui autenticação.
+grant select, insert, update, delete on table
+  public.clientes, public.servicos, public.visitas, public.visita_servicos
+  to anon, authenticated;
 
 drop policy if exists clientes_acesso_publico_v1 on public.clientes;
 create policy clientes_acesso_publico_v1 on public.clientes

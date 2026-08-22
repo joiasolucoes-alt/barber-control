@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Ban, CheckCircle2, MoreHorizontal, Pencil, Plus, Scissors } from 'lucide-react'
+import { Ban, CheckCircle2, MoreHorizontal, Pencil, Plus, Scissors, Trash2 } from 'lucide-react'
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { ErrorState, TableSkeleton } from '@/components/common/data-state'
@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/common/page-header'
 import { SearchInput } from '@/components/common/search-input'
 import { StatusBadge } from '@/components/common/status-badge'
 import { ServicoFormDialog } from '@/components/servicos/servico-form-dialog'
+import { ServicoMobileCard } from '@/components/servicos/servico-mobile-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -26,12 +27,13 @@ import { rankingServicos } from '@/lib/metrics'
 import type { Servico, StatusRegistro } from '@/types'
 
 export function ServicosPage() {
-  const { servicos, visitas, carregando, erro, recarregar, alterarStatusServico } = useBarberData()
+  const { servicos, visitas, carregando, erro, recarregar, alterarStatusServico, excluirServico } = useBarberData()
 
   const [busca, setBusca] = React.useState('')
   const [formAberto, setFormAberto] = React.useState(false)
   const [servicoEmEdicao, setServicoEmEdicao] = React.useState<Servico | null>(null)
   const [servicoParaInativar, setServicoParaInativar] = React.useState<Servico | null>(null)
+  const [servicoParaExcluir, setServicoParaExcluir] = React.useState<Servico | null>(null)
 
   const buscaAdiada = useDebounce(busca)
 
@@ -71,6 +73,32 @@ export function ServicosPage() {
     }
   }
 
+  function solicitarExclusao(servico: Servico) {
+    const totalRealizados = usoPorServico.get(servico.id) ?? 0
+    if (totalRealizados > 0) {
+      toast.warning('Serviço com histórico não pode ser excluído', {
+        description: `${servico.nome} aparece em ${totalRealizados} ${pluralizar(totalRealizados, 'atendimento', 'atendimentos')}. Inative-o para preservar os relatórios.`,
+      })
+      return
+    }
+    setServicoParaExcluir(servico)
+  }
+
+  async function confirmarExclusaoServico() {
+    if (!servicoParaExcluir) return
+    try {
+      await excluirServico(servicoParaExcluir.id)
+      toast.success('Serviço excluído', {
+        description: `${servicoParaExcluir.nome} foi removido definitivamente.`,
+      })
+      setServicoParaExcluir(null)
+    } catch (falha) {
+      toast.error('Não foi possível excluir o serviço', {
+        description: falha instanceof Error ? falha.message : 'Tente novamente em instantes.',
+      })
+    }
+  }
+
   if (erro) {
     return (
       <div className="space-y-6">
@@ -95,6 +123,7 @@ export function ServicosPage() {
       <Card>
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
           <SearchInput
+            id="servicos-busca"
             className="sm:max-w-sm sm:flex-1"
             rotulo="Buscar serviço"
             placeholder="Buscar por nome ou descrição"
@@ -134,7 +163,25 @@ export function ServicosPage() {
           }
         />
       ) : (
-        <Card>
+        <>
+          <div className="space-y-3 md:hidden">
+            {filtrados.map((servico) => (
+              <ServicoMobileCard
+                key={servico.id}
+                servico={servico}
+                realizados={usoPorServico.get(servico.id) ?? 0}
+                aoEditar={() => {
+                  setServicoEmEdicao(servico)
+                  setFormAberto(true)
+                }}
+                aoInativar={() => setServicoParaInativar(servico)}
+                aoReativar={() => void alternarStatus(servico)}
+                aoExcluir={() => solicitarExclusao(servico)}
+              />
+            ))}
+          </div>
+
+          <Card className="hidden md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -200,6 +247,10 @@ export function ServicosPage() {
                             <CheckCircle2 aria-hidden /> Reativar
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem destructive onSelect={() => solicitarExclusao(servico)}>
+                          <Trash2 aria-hidden /> Excluir definitivamente
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -207,7 +258,8 @@ export function ServicosPage() {
               ))}
             </TableBody>
           </Table>
-        </Card>
+          </Card>
+        </>
       )}
 
       <ServicoFormDialog aberto={formAberto} aoMudarAberto={setFormAberto} servico={servicoEmEdicao} />
@@ -230,6 +282,22 @@ export function ServicosPage() {
           if (servicoParaInativar) await alternarStatus(servicoParaInativar)
           setServicoParaInativar(null)
         }}
+      />
+
+      <ConfirmDialog
+        aberto={Boolean(servicoParaExcluir)}
+        aoMudarAberto={(aberto) => {
+          if (!aberto) setServicoParaExcluir(null)
+        }}
+        titulo="Excluir serviço definitivamente?"
+        descricao={
+          <>
+            <strong>{servicoParaExcluir?.nome}</strong> será removido permanentemente. Esta ação não pode ser desfeita.
+          </>
+        }
+        textoConfirmar="Excluir serviço"
+        destrutivo
+        aoConfirmar={confirmarExclusaoServico}
       />
     </div>
   )

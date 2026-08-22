@@ -195,6 +195,8 @@ export function VisitaFormDialog({
                           value={nomeRapido}
                           onChange={(evento) => setNomeRapido(evento.target.value)}
                           placeholder="Ex.: Bruno Carvalho"
+                          autoComplete="name"
+                          maxLength={120}
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -203,6 +205,7 @@ export function VisitaFormDialog({
                           id="rapido-telefone"
                           value={telefoneRapido}
                           inputMode="tel"
+                          autoComplete="tel"
                           onChange={(evento) => setTelefoneRapido(formatarTelefone(evento.target.value))}
                           placeholder="(11) 98888-7777"
                         />
@@ -287,7 +290,12 @@ export function VisitaFormDialog({
 
           <Field id="visita-observacoes" rotulo="Observações" erro={errors.observacoes?.message} dica="Opcional">
             {(props) => (
-              <Textarea {...props} {...register('observacoes')} placeholder="Detalhes do atendimento realizado" />
+              <Textarea
+                {...props}
+                {...register('observacoes')}
+                placeholder="Detalhes do atendimento realizado"
+                maxLength={500}
+              />
             )}
           </Field>
 

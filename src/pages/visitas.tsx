@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/common/page-header'
 import { SearchInput } from '@/components/common/search-input'
 import { VisitaDetalheDialog } from '@/components/visitas/visita-detalhe-dialog'
 import { VisitaFormDialog } from '@/components/visitas/visita-form-dialog'
+import { VisitaMobileCard } from '@/components/visitas/visita-mobile-card'
 import { VisitaServicosTags } from '@/components/visitas/visita-servicos-tags'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -152,6 +153,7 @@ export function VisitasPage() {
               <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
                 <Label htmlFor="visitas-busca">Buscar</Label>
                 <SearchInput
+                  id="visitas-busca"
                   rotulo="Buscar por cliente ou serviço"
                   placeholder="Cliente, telefone ou serviço"
                   valor={busca}
@@ -205,7 +207,20 @@ export function VisitasPage() {
               }
             />
           ) : (
-            <Card>
+            <>
+              <div className="space-y-3 md:hidden">
+                {visiveis.map((visita) => (
+                  <VisitaMobileCard
+                    key={visita.id}
+                    visita={visita}
+                    aoVisualizar={() => setVisitaEmDetalhe(visita)}
+                    aoEditar={() => abrirEdicao(visita)}
+                    aoExcluir={() => setVisitaParaExcluir(visita)}
+                  />
+                ))}
+              </div>
+
+              <Card className="hidden md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -283,7 +298,19 @@ export function VisitasPage() {
                   </Button>
                 </div>
               ) : null}
-            </Card>
+              </Card>
+
+              {visiveis.length < filtradas.length ? (
+                <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card p-4 sm:flex-row md:hidden">
+                  <span className="text-sm text-muted-foreground">
+                    Exibindo {visiveis.length} de {filtradas.length}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={() => setLimite((atual) => atual + TAMANHO_BLOCO)}>
+                    Carregar mais
+                  </Button>
+                </div>
+              ) : null}
+            </>
           )}
         </TabsContent>
 

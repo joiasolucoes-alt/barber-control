@@ -2,6 +2,7 @@ import * as React from 'react'
 import { CalendarCheck, DollarSign, Scissors, TrendingUp, Users } from 'lucide-react'
 
 import { AtendimentosRecentes } from '@/components/dashboard/atendimentos-recentes'
+import { DashboardHero } from '@/components/dashboard/dashboard-hero'
 import { DistribuicaoSituacoes } from '@/components/dashboard/distribuicao-situacoes'
 import { GraficoClientes } from '@/components/dashboard/grafico-clientes'
 import { GraficoNovosClientes } from '@/components/dashboard/grafico-novos-clientes'
@@ -93,9 +94,10 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        titulo="Dashboard"
-        descricao="Acompanhe os atendimentos já realizados na barbearia. Os números mudam conforme o período selecionado."
+      <DashboardHero
+        atendidosHoje={indicadores.atendidosHoje}
+        clientesAtivos={indicadores.clientesAtivos}
+        carregando={carregando}
       />
 
       <PeriodoFiltro valor={periodoChave} aoMudar={setPeriodoChave} />

@@ -161,11 +161,11 @@ export function ClienteDetalhePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Total de visitas</p>
-                <p className="heading-display text-3xl font-semibold">{formatarNumero(analise.totalVisitas)}</p>
+                <p className="metric-number text-3xl">{formatarNumero(analise.totalVisitas)}</p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Total gasto</p>
-                <p className="heading-display text-3xl font-semibold">{formatarMoeda(analise.totalGasto)}</p>
+                <p className="metric-number text-3xl">{formatarMoeda(analise.totalGasto)}</p>
               </div>
             </div>
 

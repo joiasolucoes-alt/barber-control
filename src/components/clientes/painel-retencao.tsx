@@ -51,7 +51,7 @@ export function CardPrecisamDeAtencao({ analises }: { analises: AnaliseCliente[]
                     {analise.intervaloReferenciaDias} dias · {analise.diasDeAtraso} dias de atraso
                   </p>
                 </div>
-                <SituacaoBadge situacao={analise.situacao} />
+                <SituacaoBadge situacao={analise.situacao} className="hidden min-[360px]:inline-flex" />
                 <BotaoWhatsApp cliente={analise.cliente} mensagem={mensagemRetorno(analise.cliente)} somenteIcone />
               </li>
             ))}
@@ -107,7 +107,7 @@ export function CardAniversariantes({ aniversariantes }: { aniversariantes: Aniv
                 {item.ehHoje ? <Badge variant="default">Hoje</Badge> : null}
                 <BotaoWhatsApp
                   cliente={item.cliente}
-                  mensagem={`Parabéns, ${item.cliente.nome.split(' ')[0]}! Muitas felicidades. Um abraço da barbearia.`}
+                  mensagem={`Parabéns, ${item.cliente.nome.split(' ')[0]}! Muitas felicidades. Um abraço da André Garcia Barber Shop.`}
                   somenteIcone
                 />
               </li>

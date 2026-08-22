@@ -44,7 +44,7 @@ export function StatCard({
           {carregando ? (
             <Skeleton className="h-8 w-20" />
           ) : (
-            <p className="heading-display text-3xl font-semibold leading-none">{valor}</p>
+            <p className="metric-number text-3xl leading-none">{valor}</p>
           )}
           {descricao ? <p className="text-xs text-muted-foreground">{descricao}</p> : null}
           {comparacao !== undefined ? (

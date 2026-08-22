@@ -14,16 +14,29 @@ export function dateParaDataISO(valor: Date): DataISO {
   return format(valor, 'yyyy-MM-dd')
 }
 
+/** Confirma formato e existência real da data (por exemplo, rejeita 31/02). */
+export function dataISOValida(valor: string): valor is DataISO {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) return false
+  const [ano, mes, dia] = valor.split('-').map(Number)
+  const data = new Date(ano, mes - 1, dia)
+  return (
+    Number.isFinite(data.getTime()) &&
+    data.getFullYear() === ano &&
+    data.getMonth() === mes - 1 &&
+    data.getDate() === dia
+  )
+}
+
 /** 05/03/2025 */
 export function formatarData(valor: DataISO | null | undefined): string {
-  if (!valor) return '—'
+  if (!valor || !dataISOValida(valor)) return '—'
   const data = dataISOParaDate(valor)
   return isValid(data) ? format(data, 'dd/MM/yyyy', { locale: ptBR }) : '—'
 }
 
 /** 05 de março de 2025 */
 export function formatarDataExtensa(valor: DataISO | null | undefined): string {
-  if (!valor) return '—'
+  if (!valor || !dataISOValida(valor)) return '—'
   const data = dataISOParaDate(valor)
   return isValid(data) ? format(data, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : '—'
 }

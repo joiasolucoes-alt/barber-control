@@ -73,7 +73,7 @@ export function DistribuicaoSituacoes({ resumo, carregando }: DistribuicaoSituac
                 </RechartsPieChart>
               </ResponsiveContainer>
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <strong className="heading-display text-2xl">{formatarNumero(resumo.total)}</strong>
+                <strong className="metric-number text-2xl">{formatarNumero(resumo.total)}</strong>
                 <span className="text-[11px] text-muted-foreground">ativos</span>
               </div>
             </div>
