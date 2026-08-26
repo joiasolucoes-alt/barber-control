@@ -170,6 +170,13 @@
       padding-right: max(1.5rem, env(safe-area-inset-right));
     }
   }
+
+  /* Evita animações e filtros custosos nos iPhones mais antigos. */
+  @media (max-width: 639px) {
+    .animate-fade-in {
+      animation: none;
+    }
+  }
 }
 
 @layer utilities {

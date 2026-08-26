@@ -17,8 +17,6 @@ import type {
 
 const CHAVE_STORAGE = 'barber-control:v2'
 const CHAVE_STORAGE_ANTIGA = 'barber-control:v1'
-/** Pequena latência artificial para exercitar os estados de carregamento. */
-const LATENCIA_MS = 180
 
 const statusSchema = z.enum(['ativo', 'inativo'])
 const basePersistidaSchema = z.object({
@@ -79,7 +77,7 @@ function migrarBasePersistida(base: z.infer<typeof basePersistidaSchema>): BaseL
 }
 
 function esperar<T>(valor: T): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(valor), LATENCIA_MS))
+  return Promise.resolve(valor)
 }
 
 function persistir(base: BaseLocal): void {

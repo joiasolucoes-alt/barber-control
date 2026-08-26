@@ -7,39 +7,37 @@ import { PageHeader } from '@/components/common/page-header'
 import { StatCard } from '@/components/common/stat-card'
 import { AtendimentosRecentes } from '@/components/dashboard/atendimentos-recentes'
 import { DashboardHero } from '@/components/dashboard/dashboard-hero'
-import { DistribuicaoSituacoes } from '@/components/dashboard/distribuicao-situacoes'
-import { GraficoClientes } from '@/components/dashboard/grafico-clientes'
-import { GraficoNovosClientes } from '@/components/dashboard/grafico-novos-clientes'
-import { GraficoServicos } from '@/components/dashboard/grafico-servicos'
 import { ProximosAniversarios, RecuperacaoPrioritaria } from '@/components/dashboard/operacao-clientes'
 import { PeriodoFiltro } from '@/components/dashboard/periodo-filtro'
-import { RankingClientes } from '@/components/dashboard/ranking-clientes'
-import { TaxasRetorno } from '@/components/dashboard/taxas-retorno'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useBarberData } from '@/hooks/use-barber-data'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import {
   analisarClientes,
   clientesParaRecuperar,
   proximosAniversariantes,
-  rankingClientesPorFrequencia,
-  resumirSituacoes,
 } from '@/lib/clientes-analise'
 import { dateParaDataISO, formatarData, formatarMoeda, formatarNumero } from '@/lib/format'
 import {
   calcularIndicadores,
   calcularResumoHoje,
-  calcularTaxasRetorno,
   compararIndicadores,
   filtrarVisitasPorPeriodo,
   intervaloAnteriorDoPeriodo,
   intervaloDoPeriodo,
-  rankingServicos,
-  serieDiariaClientes,
-  serieNovosClientesPorMes,
 } from '@/lib/metrics'
-import { cn } from '@/lib/utils'
 import { obterPeriodo, type PeriodoChave } from '@/types/periodo'
+
+const DashboardGraficos = React.lazy(() =>
+  import('@/components/dashboard/dashboard-graficos').then((modulo) => ({
+    default: modulo.DashboardGraficos,
+  })),
+)
+
+const CARREGANDO_GRAFICOS = (
+  <div className="h-64 animate-pulse rounded-xl bg-muted" aria-label="Carregando gráficos" role="status" />
+)
 
 interface AppOutletContext {
   abrirNovaVisita: () => void
@@ -50,6 +48,8 @@ export function DashboardPage() {
   const { abrirNovaVisita } = useOutletContext<AppOutletContext>()
   const [periodoChave, setPeriodoChave] = React.useState<PeriodoChave>('total')
   const [graficosAbertos, setGraficosAbertos] = React.useState(false)
+  const telaGrande = useMediaQuery('(min-width: 1024px)')
+  const mostrarGraficos = telaGrande || graficosAbertos
   const periodo = obterPeriodo(periodoChave)
 
   const dados = React.useMemo(() => {
@@ -82,12 +82,9 @@ export function DashboardPage() {
       recentes,
       indicadores,
       comparativos: compararIndicadores(indicadores, indicadoresAnteriores),
-      serie: serieDiariaClientes(visitasDoPeriodo, intervalo),
-      ranking: rankingServicos(visitasDoPeriodo),
-      novosClientes: serieNovosClientesPorMes(visitas, hoje),
-      taxasRetorno: calcularTaxasRetorno(visitas, hoje),
-      resumoSituacoes: resumirSituacoes(analisesAtivas),
-      rankingClientes: rankingClientesPorFrequencia(analisesAtivas),
+      visitasDoPeriodo,
+      intervalo,
+      analisesAtivas,
       rotuloIntervalo: intervalo.inicio
         ? `${formatarData(dateParaDataISO(intervalo.inicio))} até ${formatarData(dateParaDataISO(intervalo.fim))}`
         : 'Todo o histórico registrado',
@@ -227,32 +224,18 @@ export function DashboardPage() {
           {graficosAbertos ? 'Ocultar gráficos detalhados' : 'Ver gráficos detalhados'}
         </Button>
 
-        <div
-          id="dashboard-graficos"
-          className={cn('space-y-4', !graficosAbertos && 'hidden lg:block')}
-        >
-          <section aria-label="Aquisição e retorno" className="grid gap-4 lg:grid-cols-3">
-            <GraficoNovosClientes dados={dados.novosClientes} carregando={carregando} />
-            <TaxasRetorno taxas={dados.taxasRetorno} carregando={carregando} />
-          </section>
-
-          <section aria-label="Retenção e frequência" className="grid gap-4 lg:grid-cols-3">
-            <DistribuicaoSituacoes resumo={dados.resumoSituacoes} carregando={carregando} />
-            <RankingClientes clientes={dados.rankingClientes} carregando={carregando} />
-          </section>
-
-          <section className="grid gap-4 lg:grid-cols-3">
-            <GraficoClientes
-              dados={dados.serie}
-              carregando={carregando}
-              descricao={
-                dados.serie.length > 90
-                  ? 'Clientes distintos atendidos, agrupados por bloco de dias.'
-                  : 'Clientes distintos atendidos a cada dia do período.'
-              }
-            />
-            <GraficoServicos dados={dados.ranking} carregando={carregando} />
-          </section>
+        <div id="dashboard-graficos" className="space-y-4">
+          {mostrarGraficos ? (
+            <React.Suspense fallback={CARREGANDO_GRAFICOS}>
+              <DashboardGraficos
+                visitas={visitas}
+                visitasDoPeriodo={dados.visitasDoPeriodo}
+                intervalo={dados.intervalo}
+                analisesAtivas={dados.analisesAtivas}
+                carregando={carregando}
+              />
+            </React.Suspense>
+          ) : null}
         </div>
       </section>
     </div>

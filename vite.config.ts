@@ -42,6 +42,7 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,svg,png,woff2}'],
+        globIgnores: ['**/supabase-*.js', '**/supabase-repository-*.js'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
@@ -73,8 +74,6 @@ export default defineConfig({
         // Separa as bibliotecas pesadas do código da aplicação.
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
-          charts: ['recharts'],
-          supabase: ['@supabase/supabase-js'],
         },
       },
     },

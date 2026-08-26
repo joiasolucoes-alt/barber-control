@@ -8,13 +8,25 @@ import { Logo } from '@/components/layout/logo'
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
 import { NAVEGACAO_ADMINISTRATIVA, NAVEGACAO_PRINCIPAL } from '@/components/layout/navigation'
 import { SidebarNav } from '@/components/layout/sidebar-nav'
-import { VisitaFormDialog } from '@/components/visitas/visita-form-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTema } from '@/hooks/use-theme'
-import { cn } from '@/lib/utils'
+
+const VisitaFormDialog = React.lazy(() =>
+  import('@/components/visitas/visita-form-dialog').then((modulo) => ({
+    default: modulo.VisitaFormDialog,
+  })),
+)
+
+const CARREGANDO_VISITA = (
+  <div className="fixed inset-0 z-50 flex items-end bg-graphite-950/70 sm:items-center sm:justify-center" role="status">
+    <div className="w-full rounded-t-2xl border border-border bg-card p-6 text-center text-sm sm:max-w-md sm:rounded-2xl">
+      Abrindo registro de visita…
+    </div>
+  </div>
+)
 
 function BotaoTema() {
   const { tema, alternarTema } = useTema()
@@ -33,20 +45,9 @@ function BotaoTema() {
 
 export function AppShell() {
   const [visitaAberta, setVisitaAberta] = React.useState(false)
-  const [cabecalhoElevado, setCabecalhoElevado] = React.useState(false)
   const online = useOnlineStatus()
   const abrirNovaVisita = React.useCallback(() => setVisitaAberta(true), [])
   const contextoOutlet = React.useMemo(() => ({ abrirNovaVisita }), [abrirNovaVisita])
-
-  React.useEffect(() => {
-    function atualizarElevacao() {
-      setCabecalhoElevado(window.scrollY > 8)
-    }
-
-    atualizarElevacao()
-    window.addEventListener('scroll', atualizarElevacao, { passive: true })
-    return () => window.removeEventListener('scroll', atualizarElevacao)
-  }, [])
 
   return (
     <div className="min-h-dvh bg-background">
@@ -63,7 +64,7 @@ export function AppShell() {
         <div className="gold-divider my-5" />
         <SidebarNav itens={NAVEGACAO_PRINCIPAL} />
         <div className="mt-auto space-y-3 pt-6">
-          <Button type="button" className="w-full" onClick={() => setVisitaAberta(true)}>
+          <Button type="button" className="w-full" onClick={abrirNovaVisita}>
             <Plus aria-hidden /> Registrar visita
           </Button>
           <div className="rounded-xl border border-border bg-muted/20 p-2">
@@ -77,12 +78,7 @@ export function AppShell() {
       </aside>
 
       <div className="lg:pl-64">
-        <header
-          className={cn(
-            'sticky top-0 z-30 border-b border-border pt-[env(safe-area-inset-top)] backdrop-blur transition-[background-color,box-shadow]',
-            cabecalhoElevado ? 'bg-background/95 shadow-sm' : 'bg-background/85',
-          )}
-        >
+        <header className="sticky top-0 z-30 border-b border-border bg-background pt-[env(safe-area-inset-top)] shadow-sm">
           <div className="app-safe-inline flex min-h-14 items-center justify-end gap-2 lg:min-h-16">
             <div className="mr-auto flex min-w-0 items-center gap-2 lg:hidden">
               <Logo compacto className="h-10 w-10 shrink-0" />
@@ -99,7 +95,7 @@ export function AppShell() {
             ) : null}
             <Separator orientation="vertical" className="hidden h-6 md:block" />
             <BotaoTema />
-            <Button type="button" className="hidden lg:inline-flex" onClick={() => setVisitaAberta(true)}>
+            <Button type="button" className="hidden lg:inline-flex" onClick={abrirNovaVisita}>
               <Plus aria-hidden /> Nova visita
             </Button>
           </div>
@@ -114,9 +110,13 @@ export function AppShell() {
         </footer>
       </div>
 
-      <MobileBottomNav aoNovaVisita={() => setVisitaAberta(true)} />
+      <MobileBottomNav aoNovaVisita={abrirNovaVisita} />
       <FirstRunGuide />
-      <VisitaFormDialog aberto={visitaAberta} aoMudarAberto={setVisitaAberta} />
+      {visitaAberta ? (
+        <React.Suspense fallback={CARREGANDO_VISITA}>
+          <VisitaFormDialog aberto aoMudarAberto={setVisitaAberta} />
+        </React.Suspense>
+      ) : null}
     </div>
   )
 }

@@ -265,7 +265,7 @@ export function VisitaFormDialog({
 
         <form noValidate onSubmit={handleSubmit(enviar)} className="flex min-h-0 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
-            <div className="sticky -top-4 z-20 -mx-4 -mt-4 grid gap-3 border-b border-border bg-card/95 px-4 pb-3 pt-4 backdrop-blur sm:-mx-5 sm:grid-cols-2 sm:px-5">
+            <div className="sticky -top-4 z-20 -mx-4 -mt-4 grid gap-3 border-b border-border bg-card px-4 pb-3 pt-4 sm:-mx-5 sm:grid-cols-2 sm:px-5">
               <Controller
                 control={control}
                 name="cliente_id"

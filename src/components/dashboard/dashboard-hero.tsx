@@ -40,8 +40,8 @@ export function DashboardHero({ resumo, carregando, aoRegistrarVisita }: Dashboa
       aria-labelledby="dashboard-hoje-titulo"
       className="relative overflow-hidden rounded-2xl border border-gold-500/25 bg-gradient-to-br from-graphite-950 via-graphite-900 to-graphite-800 p-4 text-white shadow-lg shadow-black/10 sm:p-6"
     >
-      <div aria-hidden className="absolute -right-14 -top-20 h-48 w-48 rounded-full bg-gold-500/15 blur-3xl" />
-      <div aria-hidden className="absolute -bottom-20 left-1/3 h-40 w-40 rounded-full bg-gold-500/10 blur-3xl" />
+      <div aria-hidden className="absolute -right-14 -top-20 hidden h-48 w-48 rounded-full bg-gold-500/15 blur-3xl sm:block" />
+      <div aria-hidden className="absolute -bottom-20 left-1/3 hidden h-40 w-40 rounded-full bg-gold-500/10 blur-3xl sm:block" />
       <Scissors
         aria-hidden
         className="absolute -right-3 top-1/3 h-28 w-28 rotate-[-12deg] text-white/[0.035]"
@@ -75,7 +75,7 @@ export function DashboardHero({ resumo, carregando, aoRegistrarVisita }: Dashboa
             const formatado = chave === 'receita' || chave === 'ticketMedio' ? formatarMoeda(valor) : formatarNumero(valor)
 
             return (
-              <div key={chave} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-sm">
+              <div key={chave} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] p-3">
                 <p className="flex min-h-7 min-w-0 items-start gap-1.5 text-nav font-semibold uppercase leading-tight text-graphite-300 sm:min-h-0 sm:items-center sm:tracking-wide">
                   <Icone aria-hidden className="h-3.5 w-3.5 shrink-0 text-gold-400" />
                   <span>{rotulo}</span>
