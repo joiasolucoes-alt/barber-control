@@ -1,12 +1,15 @@
 import { z } from 'zod'
 
-import { apenasDigitos } from '@/lib/format'
+import { apenasDigitos, dataISOValida, dateParaDataISO } from '@/lib/format'
 
 const dataOpcional = z
   .string()
   .trim()
   .optional()
-  .refine((valor) => !valor || /^\d{4}-\d{2}-\d{2}$/.test(valor), { message: 'Data inválida.' })
+  .refine((valor) => !valor || dataISOValida(valor), { message: 'Data inválida.' })
+  .refine((valor) => !valor || valor <= dateParaDataISO(new Date()), {
+    message: 'A data de nascimento não pode estar no futuro.',
+  })
 
 export const clienteSchema = z.object({
   nome: z
@@ -18,7 +21,7 @@ export const clienteSchema = z.object({
     .string()
     .trim()
     .optional()
-    .refine((valor) => !valor || apenasDigitos(valor).length >= 10, {
+    .refine((valor) => !valor || [10, 11].includes(apenasDigitos(valor).length), {
       message: 'Telefone incompleto. Use DDD + número.',
     }),
   data_nascimento: dataOpcional,
@@ -35,7 +38,7 @@ export function paraNumero(valor: string | undefined | null): number | null {
   return Number.isFinite(numero) ? numero : null
 }
 
-const numeroTextoOpcional = (mensagem: string) =>
+const numeroTextoOpcional = (mensagem: string, opcoes?: { inteiro?: boolean; maximo?: number }) =>
   z
     .string()
     .trim()
@@ -44,7 +47,12 @@ const numeroTextoOpcional = (mensagem: string) =>
       (valor) => {
         if (!valor) return true
         const numero = Number(valor.replace(',', '.'))
-        return Number.isFinite(numero) && numero >= 0
+        return (
+          Number.isFinite(numero) &&
+          numero >= 0 &&
+          (!opcoes?.inteiro || Number.isInteger(numero)) &&
+          (opcoes?.maximo === undefined || numero <= opcoes.maximo)
+        )
       },
       { message: mensagem },
     )
@@ -56,23 +64,36 @@ export const servicoSchema = z.object({
     .min(2, 'O nome deve ter pelo menos 2 caracteres.')
     .max(80, 'O nome deve ter no máximo 80 caracteres.'),
   descricao: z.string().trim().max(300, 'Máximo de 300 caracteres.').optional(),
-  preco: numeroTextoOpcional('Informe um preço válido.'),
-  duracao_estimada: numeroTextoOpcional('Informe uma duração válida em minutos.'),
+  preco: numeroTextoOpcional('Informe um preço entre 0 e 999.999,99.', { maximo: 999999.99 }),
+  duracao_estimada: numeroTextoOpcional('Informe minutos inteiros entre 0 e 1.440.', {
+    inteiro: true,
+    maximo: 1440,
+  }),
   status: z.enum(['ativo', 'inativo']),
 })
 
 export type ServicoFormValues = z.infer<typeof servicoSchema>
+
+const precoCobradoTexto = z
+  .string()
+  .trim()
+  .refine((valor) => {
+    if (valor === '') return true
+    const numero = Number(valor.replace(',', '.'))
+    return Number.isFinite(numero) && numero >= 0 && numero <= 999999.99
+  }, 'Informe um valor entre 0 e 999.999,99.')
 
 export const visitaSchema = z.object({
   cliente_id: z.string({ required_error: 'Selecione o cliente.' }).min(1, 'Selecione o cliente.'),
   data_atendimento: z
     .string({ required_error: 'Informe a data do atendimento.' })
     .min(1, 'Informe a data do atendimento.')
-    .refine((valor) => /^\d{4}-\d{2}-\d{2}$/.test(valor), { message: 'Data inválida.' })
-    .refine((valor) => valor <= new Date().toISOString().slice(0, 10), {
+    .refine(dataISOValida, { message: 'Data inválida.' })
+    .refine((valor) => valor <= dateParaDataISO(new Date()), {
       message: 'A visita registra um atendimento que já aconteceu.',
     }),
   servico_ids: z.array(z.string()).min(1, 'Selecione pelo menos um serviço.'),
+  precos_cobrados: z.record(precoCobradoTexto).default({}),
   observacoes: z.string().trim().max(500, 'Máximo de 500 caracteres.').optional(),
 })
 

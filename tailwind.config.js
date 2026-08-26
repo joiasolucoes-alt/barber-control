@@ -9,9 +9,13 @@ export default {
       screens: { '2xl': '1400px' },
     },
     extend: {
+      fontSize: {
+        meta: ['var(--font-size-meta)', { lineHeight: '1rem' }],
+        nav: ['var(--font-size-nav)', { lineHeight: '0.875rem' }],
+      },
       fontFamily: {
-        sans: ['"Inter"', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        sans: ['"Manrope"', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -77,6 +81,13 @@ export default {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+      },
+      spacing: {
+        control: 'var(--control-height)',
+      },
+      boxShadow: {
+        surface: '0 1px 2px rgb(0 0 0 / 0.12), 0 8px 24px rgb(0 0 0 / 0.04)',
+        elevated: '0 18px 48px rgb(0 0 0 / 0.22)',
       },
       keyframes: {
         'accordion-down': {

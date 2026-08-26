@@ -12,7 +12,7 @@ interface DatePickerProps {
   valor: DataISO | null
   aoMudar: (valor: DataISO | null) => void
   placeholder?: string
-  /** Bloqueia datas futuras — visitas registram o que já aconteceu. */
+  /** Bloqueia datas futuras — usado em visitas e datas de nascimento. */
   bloquearFuturo?: boolean
   id?: string
   className?: string

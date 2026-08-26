@@ -7,24 +7,30 @@ import { VisitaServicosTags } from '@/components/visitas/visita-servicos-tags'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { formatarData } from '@/lib/format'
+import { formatarData, formatarMoeda } from '@/lib/format'
+import { valorDaVisita } from '@/lib/visitas'
 import type { VisitaDetalhada } from '@/types'
 
 interface AtendimentosRecentesProps {
   visitas: VisitaDetalhada[]
   carregando?: boolean
+  descricao?: string
 }
 
-export function AtendimentosRecentes({ visitas, carregando }: AtendimentosRecentesProps) {
+export function AtendimentosRecentes({
+  visitas,
+  carregando,
+  descricao = 'Últimas visitas registradas.',
+}: AtendimentosRecentesProps) {
   return (
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
         <div className="space-y-1.5">
           <CardTitle>Atendimentos recentes</CardTitle>
-          <CardDescription>Últimas visitas registradas no período.</CardDescription>
+          <CardDescription>{descricao}</CardDescription>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link to="/visitas">Ver todas</Link>
+          <Link to="/visitas">Ver todos</Link>
         </Button>
       </CardHeader>
       <CardContent>
@@ -53,7 +59,8 @@ export function AtendimentosRecentes({ visitas, carregando }: AtendimentosRecent
                     >
                       {visita.cliente.nome}
                     </Link>
-                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    <span className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                      <strong className="block font-semibold text-foreground">{formatarMoeda(valorDaVisita(visita))}</strong>
                       {formatarData(visita.data_atendimento)}
                     </span>
                   </div>

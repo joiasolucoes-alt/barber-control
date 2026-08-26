@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { repository, usandoSupabase } from '@/data'
+import { obterRepository, usandoSupabase } from '@/data'
 import type {
   Cliente,
   ClienteInput,
@@ -26,9 +26,11 @@ interface ContextoDados extends EstadoDados {
   criarCliente: (input: ClienteInput) => Promise<Cliente>
   atualizarCliente: (id: string, input: ClienteInput) => Promise<Cliente>
   alterarStatusCliente: (id: string, status: StatusRegistro) => Promise<Cliente>
+  excluirCliente: (id: string) => Promise<void>
   criarServico: (input: ServicoInput) => Promise<Servico>
   atualizarServico: (id: string, input: ServicoInput) => Promise<Servico>
   alterarStatusServico: (id: string, status: StatusRegistro) => Promise<Servico>
+  excluirServico: (id: string) => Promise<void>
   criarVisita: (input: VisitaInput) => Promise<VisitaDetalhada>
   atualizarVisita: (id: string, input: VisitaInput) => Promise<VisitaDetalhada>
   excluirVisita: (id: string) => Promise<void>
@@ -54,6 +56,7 @@ export function BarberDataProvider({ children }: { children: React.ReactNode }) 
   const carregarTudo = React.useCallback(async () => {
     setEstado((anterior) => ({ ...anterior, carregando: true, erro: null }))
     try {
+      const repository = await obterRepository()
       const [clientes, servicos, visitas] = await Promise.all([
         repository.listarClientes(),
         repository.listarServicos(),
@@ -74,16 +77,19 @@ export function BarberDataProvider({ children }: { children: React.ReactNode }) 
   }, [carregarTudo])
 
   const recarregarClientes = React.useCallback(async () => {
+    const repository = await obterRepository()
     const clientes = await repository.listarClientes()
     setEstado((anterior) => ({ ...anterior, clientes }))
   }, [])
 
   const recarregarServicos = React.useCallback(async () => {
+    const repository = await obterRepository()
     const servicos = await repository.listarServicos()
     setEstado((anterior) => ({ ...anterior, servicos }))
   }, [])
 
   const recarregarVisitas = React.useCallback(async () => {
+    const repository = await obterRepository()
     const visitas = await repository.listarVisitas()
     setEstado((anterior) => ({ ...anterior, visitas }))
   }, [])
@@ -91,53 +97,72 @@ export function BarberDataProvider({ children }: { children: React.ReactNode }) 
   const valor = React.useMemo<ContextoDados>(
     () => ({
       ...estado,
-      fonte: repository.nome,
+      fonte: usandoSupabase ? 'Supabase' : 'Dados neste aparelho',
       usandoSupabase,
       recarregar: carregarTudo,
 
       criarCliente: async (input) => {
+        const repository = await obterRepository()
         const cliente = await repository.criarCliente(input)
         await recarregarClientes()
         return cliente
       },
       atualizarCliente: async (id, input) => {
+        const repository = await obterRepository()
         const cliente = await repository.atualizarCliente(id, input)
         await Promise.all([recarregarClientes(), recarregarVisitas()])
         return cliente
       },
       alterarStatusCliente: async (id, status) => {
+        const repository = await obterRepository()
         const cliente = await repository.alterarStatusCliente(id, status)
         await Promise.all([recarregarClientes(), recarregarVisitas()])
         return cliente
       },
+      excluirCliente: async (id) => {
+        const repository = await obterRepository()
+        await repository.excluirCliente(id)
+        await Promise.all([recarregarClientes(), recarregarVisitas()])
+      },
 
       criarServico: async (input) => {
+        const repository = await obterRepository()
         const servico = await repository.criarServico(input)
         await recarregarServicos()
         return servico
       },
       atualizarServico: async (id, input) => {
+        const repository = await obterRepository()
         const servico = await repository.atualizarServico(id, input)
         await Promise.all([recarregarServicos(), recarregarVisitas()])
         return servico
       },
       alterarStatusServico: async (id, status) => {
+        const repository = await obterRepository()
         const servico = await repository.alterarStatusServico(id, status)
         await Promise.all([recarregarServicos(), recarregarVisitas()])
         return servico
       },
+      excluirServico: async (id) => {
+        const repository = await obterRepository()
+        await repository.excluirServico(id)
+        await Promise.all([recarregarServicos(), recarregarVisitas()])
+      },
 
       criarVisita: async (input) => {
+        const repository = await obterRepository()
         const visita = await repository.criarVisita(input)
         await recarregarVisitas()
         return visita
       },
       atualizarVisita: async (id, input) => {
+        const repository = await obterRepository()
         const visita = await repository.atualizarVisita(id, input)
         await recarregarVisitas()
         return visita
       },
       excluirVisita: async (id) => {
+        const repository = await obterRepository()
         await repository.excluirVisita(id)
         await recarregarVisitas()
       },

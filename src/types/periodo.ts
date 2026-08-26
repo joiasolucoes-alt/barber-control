@@ -14,9 +14,9 @@ export const PERIODOS: PeriodoOpcao[] = [
   { chave: '30d', rotulo: 'Últimos 30 dias', rotuloCurto: '30 dias', dias: 30 },
   { chave: '90d', rotulo: 'Últimos 90 dias', rotuloCurto: '90 dias', dias: 90 },
   { chave: '365d', rotulo: 'Últimos 365 dias', rotuloCurto: '365 dias', dias: 365 },
-  { chave: 'total', rotulo: 'Período total', rotuloCurto: 'Total', dias: null },
+  { chave: 'total', rotulo: 'Todos os períodos', rotuloCurto: 'Todos', dias: null },
 ]
 
 export function obterPeriodo(chave: PeriodoChave): PeriodoOpcao {
-  return PERIODOS.find((periodo) => periodo.chave === chave) ?? PERIODOS[1]
+  return PERIODOS.find((periodo) => periodo.chave === chave) ?? PERIODOS[PERIODOS.length - 1]
 }

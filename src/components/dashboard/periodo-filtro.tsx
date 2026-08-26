@@ -14,7 +14,7 @@ export function PeriodoFiltro({ valor, aoMudar, className }: PeriodoFiltroProps)
     <div
       role="group"
       aria-label="Filtrar período"
-      className={cn('flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1', className)}
+      className={cn('grid grid-cols-5 gap-1 rounded-lg border border-border bg-card p-1 sm:flex sm:flex-wrap', className)}
     >
       {PERIODOS.map((periodo) => {
         const ativo = periodo.chave === valor
@@ -27,7 +27,7 @@ export function PeriodoFiltro({ valor, aoMudar, className }: PeriodoFiltroProps)
             aria-pressed={ativo}
             title={periodo.rotulo}
             onClick={() => aoMudar(periodo.chave)}
-            className={cn('flex-1 sm:flex-none', !ativo && 'text-muted-foreground')}
+            className={cn('min-w-0 px-1 text-xs tracking-tight sm:flex-none sm:px-3', !ativo && 'text-muted-foreground')}
           >
             {periodo.rotuloCurto}
           </Button>

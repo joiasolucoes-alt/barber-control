@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { exibirTelefone, formatarDataExtensa, formatarDataHora, formatarMoeda } from '@/lib/format'
+import { valorDaVisita } from '@/lib/visitas'
 import type { VisitaDetalhada } from '@/types'
 
 interface VisitaDetalheDialogProps {
@@ -23,7 +24,7 @@ interface VisitaDetalheDialogProps {
 }
 
 export function VisitaDetalheDialog({ visita, aoFechar, aoEditar }: VisitaDetalheDialogProps) {
-  const total = visita?.servicos.reduce((soma, servico) => soma + (servico.preco ?? 0), 0) ?? 0
+  const total = visita ? valorDaVisita(visita) : 0
 
   return (
     <Dialog open={Boolean(visita)} onOpenChange={(aberto) => (!aberto ? aoFechar() : undefined)}>

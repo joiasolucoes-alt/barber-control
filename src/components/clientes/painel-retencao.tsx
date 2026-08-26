@@ -6,14 +6,21 @@ import { SituacaoBadge } from '@/components/clientes/situacao-badge'
 import { ClienteAvatar } from '@/components/common/cliente-avatar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { formatarData, pluralizar } from '@/lib/format'
 import { mensagemRetorno, type AnaliseCliente, type Aniversariante } from '@/lib/clientes-analise'
 
-const LIMITE_LISTA = 6
+const LIMITE_RETENCAO = 3
+const LIMITE_ANIVERSARIOS = 6
+
+interface CardPrecisamDeAtencaoProps {
+  analises: AnaliseCliente[]
+  aoVerTodos?: () => void
+}
 
 /** Clientes que passaram do ritmo habitual, ordenados por relevância. */
-export function CardPrecisamDeAtencao({ analises }: { analises: AnaliseCliente[] }) {
-  const visiveis = analises.slice(0, LIMITE_LISTA)
+export function CardPrecisamDeAtencao({ analises, aoVerTodos }: CardPrecisamDeAtencaoProps) {
+  const visiveis = analises.slice(0, LIMITE_RETENCAO)
 
   return (
     <Card>
@@ -51,19 +58,17 @@ export function CardPrecisamDeAtencao({ analises }: { analises: AnaliseCliente[]
                     {analise.intervaloReferenciaDias} dias · {analise.diasDeAtraso} dias de atraso
                   </p>
                 </div>
-                <SituacaoBadge situacao={analise.situacao} />
+                <SituacaoBadge situacao={analise.situacao} className="hidden min-[360px]:inline-flex" />
                 <BotaoWhatsApp cliente={analise.cliente} mensagem={mensagemRetorno(analise.cliente)} somenteIcone />
               </li>
             ))}
           </ul>
         )}
 
-        {analises.length > visiveis.length ? (
-          <p className="pt-3 text-xs text-muted-foreground">
-            e mais {analises.length - visiveis.length}{' '}
-            {pluralizar(analises.length - visiveis.length, 'cliente', 'clientes')} — use o filtro de situação na
-            lista abaixo.
-          </p>
+        {analises.length > visiveis.length && aoVerTodos ? (
+          <Button type="button" variant="outline" size="sm" className="mt-3 w-full" onClick={aoVerTodos}>
+            Ver todos os {analises.length} clientes prioritários
+          </Button>
         ) : null}
       </CardContent>
     </Card>
@@ -72,7 +77,7 @@ export function CardPrecisamDeAtencao({ analises }: { analises: AnaliseCliente[]
 
 /** Aniversariantes do mês corrente. */
 export function CardAniversariantes({ aniversariantes }: { aniversariantes: Aniversariante[] }) {
-  const visiveis = aniversariantes.slice(0, LIMITE_LISTA)
+  const visiveis = aniversariantes.slice(0, LIMITE_ANIVERSARIOS)
 
   return (
     <Card>
@@ -88,10 +93,10 @@ export function CardAniversariantes({ aniversariantes }: { aniversariantes: Aniv
             Nenhum aniversariante neste mês entre os clientes com data de nascimento cadastrada.
           </p>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:-mx-5 sm:px-5 lg:-mx-6 lg:px-6">
             {visiveis.map((item) => (
-              <li key={item.cliente.id} className="flex items-center gap-3 py-3 first:pt-0">
-                <ClienteAvatar nome={item.cliente.nome} />
+              <li key={item.cliente.id} className="flex min-w-[15rem] snap-start items-center gap-2.5 rounded-xl border border-border bg-muted/20 p-3">
+                <ClienteAvatar nome={item.cliente.nome} className="h-9 w-9" />
                 <div className="min-w-0 flex-1">
                   <Link
                     to={`/clientes/${item.cliente.id}`}
@@ -104,10 +109,10 @@ export function CardAniversariantes({ aniversariantes }: { aniversariantes: Aniv
                     {item.idade ? ` · faz ${item.idade} anos` : ''}
                   </p>
                 </div>
-                {item.ehHoje ? <Badge variant="default">Hoje</Badge> : null}
+                {item.ehHoje ? <Badge variant="default" className="px-2">Hoje</Badge> : null}
                 <BotaoWhatsApp
                   cliente={item.cliente}
-                  mensagem={`Parabéns, ${item.cliente.nome.split(' ')[0]}! Muitas felicidades. Um abraço da barbearia.`}
+                  mensagem={`Parabéns, ${item.cliente.nome.split(' ')[0]}! Muitas felicidades. Um abraço da André Garcia Barber Shop.`}
                   somenteIcone
                 />
               </li>

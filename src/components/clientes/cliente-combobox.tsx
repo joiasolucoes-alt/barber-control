@@ -70,7 +70,6 @@ export function ClienteCombobox({
             onChange={(evento) => setBusca(evento.target.value)}
             placeholder="Buscar por nome ou telefone"
             aria-label="Buscar cliente"
-            className="h-9"
           />
         </div>
 
@@ -90,7 +89,7 @@ export function ClienteCombobox({
                       aoMudar(cliente.id)
                       setAberto(false)
                     }}
-                    className="flex w-full items-center gap-3 rounded-sm px-2 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:outline-none"
+                    className="flex min-h-control w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:outline-none sm:min-h-10"
                   >
                     <ClienteAvatar nome={cliente.nome} className="h-8 w-8" />
                     <span className="min-w-0 flex-1">

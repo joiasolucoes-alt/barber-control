@@ -1,0 +1,283 @@
+PLANO DE EVOLUÇÃO DO MVP — BARBER CONTROL
+===========================================
+
+Objetivo
+--------
+
+Evoluir o MVP com prioridade para o uso funcional no celular, mantendo uma
+experiência completa e bem distribuída no computador.
+
+Cada etapa deverá ser implementada, testada, revisada e publicada
+separadamente.
+
+
+ETAPA 1 — BASELINE E DESIGN SYSTEM
+----------------------------------
+
+Objetivo: criar uma base visual consistente antes de modificar as telas.
+
+- Consolidar tamanhos de fonte, espaçamentos, bordas, sombras e cores.
+- Definir tamanho mínimo de texto: 12 px em informações e 11 px na navegação.
+- Garantir áreas de toque com pelo menos 44 x 44 px.
+- Padronizar cabeçalhos, cards, campos, botões e painéis inferiores.
+- Criar componentes responsivos reutilizáveis.
+- Verificar as larguras de 320, 390, 768, 1024 e 1280 px.
+
+Resultado: mudanças futuras mais rápidas e visualmente consistentes.
+
+
+ETAPA 2 — NOVA NAVEGAÇÃO
+------------------------
+
+Objetivo: eliminar a barra inferior apertada.
+
+No celular:
+
+- Início.
+- Agenda.
+- Botão central “+ Visita”.
+- Clientes.
+- Mais.
+
+A área “Mais” terá:
+
+- Serviços.
+- Tema claro/escuro.
+- Instalar aplicativo.
+- Dados e segurança.
+- Informações do sistema.
+
+No computador:
+
+- Manter a barra lateral.
+- Preservar acesso direto às áreas mais importantes.
+- Organizar itens administrativos na parte inferior.
+
+Resultado: cinco posições confortáveis no celular, com textos e ícones maiores.
+
+
+ETAPA 3 — CABEÇALHO E LOGO COMPACTA
+-----------------------------------
+
+Objetivo: recuperar espaço vertical.
+
+- Criar uma versão compacta da marca para o celular.
+- Reduzir o cabeçalho móvel para aproximadamente 56 px.
+- Remover a repetição entre título do cabeçalho e título da página.
+- Manter a logo completa na barra lateral do desktop.
+- Melhorar o comportamento do cabeçalho durante a rolagem.
+- Padronizar o botão de voltar em páginas internas.
+
+Resultado: mais conteúdo útil aparece na primeira tela.
+
+
+ETAPA 4 — REGISTRAR VISITA
+--------------------------
+
+Objetivo: tornar o principal fluxo do aplicativo extremamente rápido.
+
+- Transformar o formulário em tela cheia no celular.
+- Manter um rodapé fixo acima do teclado.
+- Exibir o total da visita em tempo real.
+- Tornar a seleção de serviços mais compacta.
+- Ordenar serviços por frequência de uso.
+- Adicionar “Repetir última visita” após escolher um cliente.
+- Manter cliente e data sempre visíveis no topo.
+- Recolher observações em uma opção secundária.
+- Permitir ajustar o preço realmente cobrado.
+- Preservar corretamente o preço histórico.
+- Mostrar uma confirmação clara após registrar.
+
+Resultado: registrar uma visita comum em poucos toques e sem rolagem
+desnecessária.
+
+
+ETAPA 5 — DASHBOARD OPERACIONAL
+-------------------------------
+
+Objetivo: mostrar primeiro o que interessa no dia.
+
+Primeira seção:
+
+- Atendimentos de hoje.
+- Receita de hoje.
+- Ticket médio.
+- Clientes únicos.
+- Ação rápida para registrar visita.
+
+Segunda seção:
+
+- Três clientes prioritários para recuperação.
+- Aniversariantes próximos.
+- Últimos atendimentos.
+
+Análises históricas:
+
+- Filtros de período.
+- Cards em grade 2 x 2 no celular.
+- Remover “Sem comparação” quando não houver período anterior.
+- Gráficos detalhados abaixo ou em seção expansível.
+- Manter uma visualização mais ampla no desktop.
+
+Resultado: o Dashboard passa a ser útil durante o trabalho sem perder os
+relatórios.
+
+
+ETAPA 6 — CLIENTES E RETENÇÃO
+-----------------------------
+
+Objetivo: facilitar busca e contato.
+
+- Colocar a busca imediatamente após o cabeçalho.
+- Criar chips rápidos: Todos, Em risco, Perdidos e Inativos.
+- Mover filtros avançados para um painel inferior.
+- Exibir somente os três clientes mais importantes no card de retenção.
+- Adicionar “Ver todos”.
+- Compactar aniversariantes em uma faixa horizontal.
+- Reduzir a altura dos cards de clientes.
+- Tornar o card clicável.
+- Substituir o botão grande de WhatsApp por uma ação compacta.
+- Manter ordenação por frequência, atraso e última visita.
+- Criar indicador visual quando um filtro estiver ativo.
+
+Resultado: localizar um cliente passa a ser a primeira ação disponível.
+
+
+ETAPA 7 — UNIFICAR AGENDA E VISITAS
+-----------------------------------
+
+Objetivo: acabar com visualizações redundantes.
+
+A Agenda terá:
+
+- Visualização Calendário.
+- Visualização Lista.
+- Agrupamento da lista por dia.
+- Quantidade de atendimentos.
+- Clientes únicos.
+- Receita diária.
+- Valor de cada visita.
+- Filtros rápidos de período.
+- Navegação entre meses por gesto ou botões.
+- Painel inferior com detalhes do dia.
+
+A tela atual de Visitas poderá:
+
+- Ser incorporada à Agenda.
+- Permanecer como rota compatível para links antigos.
+- Deixar de ocupar uma posição na navegação móvel.
+
+Resultado: calendário e histórico ficam concentrados em um único lugar.
+
+
+ETAPA 8 — DETALHE DO CLIENTE E SERVIÇOS
+---------------------------------------
+
+Detalhe do cliente:
+
+- Compactar cabeçalho e ações.
+- Destacar WhatsApp e Registrar visita.
+- Organizar o resumo em grade.
+- Mostrar somente as primeiras visitas e oferecer “Carregar mais”.
+- Permitir repetir um atendimento anterior.
+- Melhorar a visualização de atraso e retorno esperado.
+
+Serviços:
+
+- Manter cards compactos.
+- Ocultar a busca enquanto houver poucos serviços.
+- Permitir ordenar os serviços.
+- Mostrar preço, duração e frequência com mais clareza.
+- Remover o campo “ativo” da criação; novos serviços começam ativos.
+- Manter inativação e exclusão no menu de ações.
+
+
+ETAPA 9 — FORMULÁRIOS SECUNDÁRIOS
+---------------------------------
+
+Objetivo: reduzir esforço e melhorar o uso com o teclado aberto.
+
+- Cadastro rápido de cliente com nome e WhatsApp.
+- Nascimento e observações dentro de “Mais informações”.
+- Remover o campo “Cliente ativo” da criação.
+- Criar rodapés fixos com Cancelar e Salvar.
+- Melhorar máscaras de telefone, moeda e duração.
+- Exibir erros próximos aos campos.
+- Confirmar antes de descartar alterações preenchidas.
+- Garantir que nenhum campo ou botão fique escondido pelo teclado.
+
+
+ETAPA 10 — PWA, CONFIANÇA E DADOS
+---------------------------------
+
+Objetivo: aumentar a percepção de produto pronto.
+
+- Remover mensagens técnicas sobre .env.
+- Criar a área “Dados e segurança”.
+- Informar claramente se os dados estão apenas no aparelho.
+- Exibir status de sincronização quando o Supabase for conectado.
+- Acrescentar opção de exportar ou fazer backup.
+- Criar um convite discreto para instalar o aplicativo.
+- Melhorar ícone, splash screen e nome do PWA.
+- Criar uma orientação curta na primeira abertura.
+- Exibir estado offline sem interromper o uso.
+
+
+ETAPA 11 — ACESSIBILIDADE E ACABAMENTO
+--------------------------------------
+
+- Revisar contraste nos dois temas.
+- Aumentar textos pequenos.
+- Validar leitor de tela e navegação por teclado.
+- Padronizar estados de foco, toque, carregamento e erro.
+- Testar zoom e tamanho de fonte do sistema.
+- Revisar safe areas de iPhone e Android.
+- Adicionar animações discretas.
+- Garantir suporte a movimento reduzido.
+- Verificar cards e gráficos com números grandes.
+
+
+ETAPA 12 — AUDITORIA FINAL E PUBLICAÇÃO
+---------------------------------------
+
+Fluxos completos a validar:
+
+- Criar cliente.
+- Editar, inativar, reativar e excluir cliente.
+- Criar e alterar serviço.
+- Registrar, editar e excluir visita.
+- Conferir atualização imediata da Agenda.
+- Validar preços históricos.
+- Buscar por telefone.
+- Usar filtros e ordenações.
+- Abrir WhatsApp.
+- Instalar e usar o PWA.
+- Alternar temas.
+- Testar comportamento offline.
+
+
+PROCESSO DE EXECUÇÃO DE CADA ETAPA
+---------------------------------
+
+1. Implementação local.
+2. Lint, TypeScript, testes e build.
+3. Verificação em 320, 390, 768 e 1280 px.
+4. Teste funcional no navegador.
+5. Revisão visual.
+6. Commit separado no GitHub.
+7. Publicação e validação na Vercel.
+
+
+ORDEM RECOMENDADA
+-----------------
+
+1. Navegação e cabeçalho.
+2. Registro de visita.
+3. Dashboard.
+4. Clientes.
+5. Agenda e histórico de visitas.
+6. Detalhe do cliente e Serviços.
+7. Formulários secundários.
+8. PWA, confiança e dados.
+9. Acessibilidade e acabamento.
+10. Auditoria final e publicação.

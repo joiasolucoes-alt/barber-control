@@ -53,12 +53,19 @@ export interface VisitaServico {
   id: string
   visita_id: string
   servico_id: string
+  /** Preço congelado quando o serviço foi vinculado à visita. */
+  preco_cobrado: number | null
+}
+
+export interface ServicoRealizado extends Servico {
+  /** Preço histórico; não muda quando o cadastro do serviço é reajustado. */
+  preco_cobrado: number | null
 }
 
 /** Visita com cliente e servicos ja resolvidos, usada nas telas. */
 export interface VisitaDetalhada extends Visita {
   cliente: Cliente
-  servicos: Servico[]
+  servicos: ServicoRealizado[]
 }
 
 export type ClienteInput = {
@@ -82,4 +89,6 @@ export type VisitaInput = {
   data_atendimento: DataISO
   observacoes?: string | null
   servico_ids: string[]
+  /** Valor efetivamente cobrado por serviço; ausente mantém o preço padrão ou histórico. */
+  precos_cobrados?: Record<string, number | null>
 }

@@ -1,10 +1,11 @@
 import * as React from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarRange, Cake, Pencil, Phone, Plus, StickyNote } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { CalendarRange, Cake, Pencil, Phone, Plus, RotateCcw, StickyNote } from 'lucide-react'
 
 import { BotaoWhatsApp } from '@/components/clientes/botao-whatsapp'
 import { ClienteFormDialog } from '@/components/clientes/cliente-form-dialog'
 import { SituacaoBadge } from '@/components/clientes/situacao-badge'
+import { BackButton } from '@/components/common/back-button'
 import { ClienteAvatar } from '@/components/common/cliente-avatar'
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/data-state'
@@ -29,6 +30,10 @@ import {
   DESCRICOES_SITUACAO,
   mensagemRetorno,
 } from '@/lib/clientes-analise'
+import { valorDaVisita } from '@/lib/visitas'
+import type { VisitaDetalhada } from '@/types'
+
+const VISITAS_INICIAIS = 4
 
 function LinhaInfo({ icone, rotulo, valor }: { icone: React.ReactNode; rotulo: string; valor: string }) {
   return (
@@ -46,11 +51,12 @@ function LinhaInfo({ icone, rotulo, valor }: { icone: React.ReactNode; rotulo: s
 
 export function ClienteDetalhePage() {
   const { id = '' } = useParams()
-  const navegar = useNavigate()
   const { clientes, visitas, carregando, erro, recarregar } = useBarberData()
 
   const [formAberto, setFormAberto] = React.useState(false)
   const [visitaAberta, setVisitaAberta] = React.useState(false)
+  const [visitaParaRepetir, setVisitaParaRepetir] = React.useState<VisitaDetalhada | null>(null)
+  const [limiteVisitas, setLimiteVisitas] = React.useState(VISITAS_INICIAIS)
 
   const cliente = clientes.find((item) => item.id === id) ?? null
   const analise = React.useMemo(
@@ -63,6 +69,19 @@ export function ClienteDetalhePage() {
         : null,
     [cliente, visitas],
   )
+  const visitasVisiveis = analise?.visitas.slice(0, limiteVisitas) ?? []
+
+  React.useEffect(() => setLimiteVisitas(VISITAS_INICIAIS), [id])
+
+  function abrirRegistro() {
+    setVisitaParaRepetir(null)
+    setVisitaAberta(true)
+  }
+
+  function repetirVisita(visita: VisitaDetalhada) {
+    setVisitaParaRepetir(visita)
+    setVisitaAberta(true)
+  }
 
   if (erro) {
     return <ErrorState mensagem={erro} aoTentarNovamente={() => void recarregar()} />
@@ -71,7 +90,7 @@ export function ClienteDetalhePage() {
   if (carregando) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-9 w-40" />
+        <BackButton para="/clientes" rotulo="Voltar para clientes" />
         <Skeleton className="h-40 w-full rounded-xl" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -85,29 +104,23 @@ export function ClienteDetalhePage() {
         titulo="Cliente não encontrado"
         descricao="O cliente pode ter sido removido ou o endereço está incorreto."
         acao={
-          <Button variant="outline" onClick={() => navegar('/clientes')}>
-            <ArrowLeft aria-hidden /> Voltar para clientes
-          </Button>
+          <BackButton para="/clientes" rotulo="Voltar para clientes" className="ml-0 border border-border px-3" />
         }
       />
     )
   }
 
   return (
-    <div className="space-y-6">
-      <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
-        <Link to="/clientes">
-          <ArrowLeft aria-hidden /> Voltar para clientes
-        </Link>
-      </Button>
+    <div className="space-y-5 sm:space-y-6">
+      <BackButton para="/clientes" rotulo="Voltar para clientes" />
 
       <Card>
-        <CardContent className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex items-start gap-4">
-            <ClienteAvatar nome={cliente.nome} className="h-14 w-14 text-base" />
-            <div className="space-y-2">
+        <CardContent className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+            <ClienteAvatar nome={cliente.nome} className="h-12 w-12 text-sm sm:h-14 sm:w-14 sm:text-base" />
+            <div className="min-w-0 space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="heading-display text-2xl font-semibold">{cliente.nome}</h1>
+                <h1 className="heading-display min-w-0 text-xl font-semibold sm:text-2xl">{cliente.nome}</h1>
                 <SituacaoBadge situacao={analise.situacao} titulo={DESCRICOES_SITUACAO[analise.situacao]} />
                 <StatusBadge status={cliente.status} />
               </div>
@@ -117,7 +130,7 @@ export function ClienteDetalhePage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <BotaoWhatsApp
               cliente={cliente}
               mensagem={
@@ -125,16 +138,44 @@ export function ClienteDetalhePage() {
                   ? mensagemRetorno(cliente)
                   : undefined
               }
+              className="w-full sm:w-auto"
             />
-            <Button variant="outline" onClick={() => setFormAberto(true)}>
-              <Pencil aria-hidden /> Editar
-            </Button>
-            <Button onClick={() => setVisitaAberta(true)}>
+            <Button className="w-full sm:w-auto" onClick={abrirRegistro}>
               <Plus aria-hidden /> Registrar visita
+            </Button>
+            <Button variant="ghost" className="col-span-2 sm:col-span-1" onClick={() => setFormAberto(true)}>
+              <Pencil aria-hidden /> Editar cadastro
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {analise.previsaoRetorno ? (
+        <div
+          className={
+            analise.diasDeAtraso !== null && analise.diasDeAtraso > 0
+              ? 'rounded-xl border border-destructive/30 bg-destructive/[0.06] p-4'
+              : 'rounded-xl border border-primary/25 bg-primary/[0.05] p-4'
+          }
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="ui-eyebrow">Retorno esperado</p>
+              <p className="mt-1 font-semibold">{formatarDataExtensa(analise.previsaoRetorno)}</p>
+            </div>
+            <p className={analise.diasDeAtraso !== null && analise.diasDeAtraso > 0 ? 'font-semibold text-destructive' : 'font-medium text-primary'}>
+              {analise.diasDeAtraso !== null && analise.diasDeAtraso > 0
+                ? `${analise.diasDeAtraso} ${pluralizar(analise.diasDeAtraso, 'dia', 'dias')} de atraso`
+                : analise.diasDeAtraso !== null
+                  ? `Retorno em ${Math.abs(analise.diasDeAtraso)} ${pluralizar(Math.abs(analise.diasDeAtraso), 'dia', 'dias')}`
+                  : null}
+            </p>
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Ritmo estimado: a cada {analise.intervaloReferenciaDias} dias · {DESCRICOES_SITUACAO[analise.situacao]}
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>
@@ -158,14 +199,14 @@ export function ClienteDetalhePage() {
             <CardDescription>Consolidado de todo o histórico do cliente.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
+              <div className="min-w-0">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Total de visitas</p>
-                <p className="heading-display text-3xl font-semibold">{formatarNumero(analise.totalVisitas)}</p>
+                <p className="metric-number text-2xl sm:text-3xl">{formatarNumero(analise.totalVisitas)}</p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Total gasto</p>
-                <p className="heading-display text-3xl font-semibold">{formatarMoeda(analise.totalGasto)}</p>
+                <p className="metric-number text-xl sm:text-2xl">{formatarMoeda(analise.totalGasto)}</p>
               </div>
             </div>
 
@@ -265,40 +306,55 @@ export function ClienteDetalhePage() {
               titulo="Nenhuma visita registrada"
               descricao="Registre o primeiro atendimento deste cliente."
               acao={
-                <Button onClick={() => setVisitaAberta(true)}>
+                <Button onClick={abrirRegistro}>
                   <Plus aria-hidden /> Registrar visita
                 </Button>
               }
             />
           ) : (
             <ol className="relative space-y-4 border-l border-border pl-6">
-              {analise.visitas.map((visita) => (
+              {visitasVisiveis.map((visita) => (
                 <li key={visita.id} className="relative">
                   <span
                     aria-hidden
                     className="absolute -left-[1.9rem] top-1.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary"
                   />
-                  <div className="space-y-2 rounded-lg border border-border p-4">
+                  <div className="space-y-2 rounded-lg border border-border p-3 sm:p-4">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <p className="text-sm font-medium">{formatarDataExtensa(visita.data_atendimento)}</p>
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {formatarData(visita.data_atendimento)}
-                      </span>
+                      <strong className="metric-number text-sm text-primary">{formatarMoeda(valorDaVisita(visita))}</strong>
                     </div>
                     <VisitaServicosTags servicos={visita.servicos} />
                     {visita.observacoes ? (
                       <p className="text-sm text-muted-foreground">{visita.observacoes}</p>
                     ) : null}
+                    <Button type="button" variant="ghost" size="sm" className="-ml-2" onClick={() => repetirVisita(visita)}>
+                      <RotateCcw aria-hidden /> Repetir atendimento
+                    </Button>
                   </div>
                 </li>
               ))}
             </ol>
           )}
+
+          {limiteVisitas < analise.visitas.length ? (
+            <Button type="button" variant="outline" className="mt-4 w-full" onClick={() => setLimiteVisitas((atual) => atual + VISITAS_INICIAIS)}>
+              Carregar mais visitas
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
 
       <ClienteFormDialog aberto={formAberto} aoMudarAberto={setFormAberto} cliente={cliente} />
-      <VisitaFormDialog aberto={visitaAberta} aoMudarAberto={setVisitaAberta} clienteIdInicial={cliente.id} />
+      <VisitaFormDialog
+        aberto={visitaAberta}
+        aoMudarAberto={(aberto) => {
+          setVisitaAberta(aberto)
+          if (!aberto) setVisitaParaRepetir(null)
+        }}
+        clienteIdInicial={cliente.id}
+        visitaParaRepetir={visitaParaRepetir}
+      />
     </div>
   )
 }

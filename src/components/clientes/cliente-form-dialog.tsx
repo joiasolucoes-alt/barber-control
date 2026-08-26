@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { DatePicker } from '@/components/common/date-picker'
 import { Field } from '@/components/common/field'
 import {
@@ -42,6 +44,8 @@ const VALORES_PADRAO: ClienteFormValues = {
 export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: ClienteFormDialogProps) {
   const { criarCliente, atualizarCliente } = useBarberData()
   const emEdicao = Boolean(cliente)
+  const [maisInformacoesAberto, setMaisInformacoesAberto] = React.useState(false)
+  const [confirmarDescarte, setConfirmarDescarte] = React.useState(false)
 
   const {
     register,
@@ -50,7 +54,7 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
     reset,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<ClienteFormValues>({
     resolver: zodResolver(clienteSchema),
     defaultValues: VALORES_PADRAO,
@@ -58,6 +62,8 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
 
   React.useEffect(() => {
     if (!aberto) return
+    setMaisInformacoesAberto(Boolean(cliente?.data_nascimento || cliente?.observacoes))
+    setConfirmarDescarte(false)
     reset(
       cliente
         ? {
@@ -73,6 +79,14 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
 
   const status = watch('status')
 
+  function solicitarFechamento() {
+    if (isDirty && !isSubmitting) {
+      setConfirmarDescarte(true)
+      return
+    }
+    aoMudarAberto(false)
+  }
+
   async function enviar(valores: ClienteFormValues) {
     try {
       const payload = {
@@ -80,7 +94,7 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
         telefone: valores.telefone || null,
         data_nascimento: valores.data_nascimento || null,
         observacoes: valores.observacoes || null,
-        status: valores.status,
+        status: cliente ? valores.status : 'ativo' as const,
       }
       const salvo = cliente
         ? await atualizarCliente(cliente.id, payload)
@@ -99,93 +113,149 @@ export function ClienteFormDialog({ aberto, aoMudarAberto, cliente, aoSalvar }: 
   }
 
   return (
-    <Dialog open={aberto} onOpenChange={aoMudarAberto}>
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>{emEdicao ? 'Editar cliente' : 'Novo cliente'}</DialogTitle>
-          <DialogDescription>
-            {emEdicao
-              ? 'Atualize os dados cadastrais do cliente.'
-              : 'A data de cadastro é preenchida automaticamente no momento do registro.'}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={aberto} onOpenChange={(novoEstado) => (novoEstado ? aoMudarAberto(true) : solicitarFechamento())}>
+        <DialogContent className="top-0 h-dvh max-h-dvh grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 p-0 pb-0 sm:right-auto sm:h-auto sm:max-h-[92dvh] sm:max-w-xl sm:rounded-xl sm:border">
+          <DialogHeader className="shrink-0 border-b border-border p-4 pr-14 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-5 sm:pr-14">
+            <DialogTitle>{emEdicao ? 'Editar cliente' : 'Novo cliente'}</DialogTitle>
+            <DialogDescription>
+              {emEdicao ? 'Atualize os dados cadastrais.' : 'Nome e WhatsApp são suficientes para começar.'}
+            </DialogDescription>
+          </DialogHeader>
 
-        <form noValidate onSubmit={handleSubmit(enviar)} className="space-y-4">
-          <Field id="cliente-nome" rotulo="Nome completo" obrigatorio erro={errors.nome?.message}>
-            {(props) => <Input {...props} {...register('nome')} placeholder="Ex.: Rafael Almeida" autoComplete="name" />}
-          </Field>
+          <form noValidate onSubmit={handleSubmit(enviar)} className="flex min-h-0 flex-col">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
+              <Field id="cliente-nome" rotulo="Nome completo" obrigatorio erro={errors.nome?.message}>
+                {(props) => (
+                  <Input
+                    {...props}
+                    {...register('nome')}
+                    placeholder="Ex.: Rafael Almeida"
+                    autoComplete="name"
+                    maxLength={120}
+                  />
+                )}
+              </Field>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              id="cliente-telefone"
-              rotulo="Telefone / WhatsApp"
-              erro={errors.telefone?.message}
-              dica="Opcional, mas necessário para as ações de retorno"
-            >
-              {(props) => (
-                <Input
-                  {...props}
-                  {...register('telefone')}
-                  inputMode="tel"
-                  placeholder="(11) 98888-7777"
-                  onChange={(evento) => setValue('telefone', formatarTelefone(evento.target.value), { shouldValidate: true })}
-                />
-              )}
-            </Field>
+              <Field
+                id="cliente-telefone"
+                rotulo="Telefone / WhatsApp"
+                erro={errors.telefone?.message}
+                dica="Opcional, mas necessário para contato e recuperação"
+              >
+                {(props) => (
+                  <Input
+                    {...props}
+                    {...register('telefone')}
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(11) 98888-7777"
+                    onChange={(evento) =>
+                      setValue('telefone', formatarTelefone(evento.target.value), {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  />
+                )}
+              </Field>
 
-            <Field
-              id="cliente-nascimento"
-              rotulo="Data de nascimento"
-              erro={errors.data_nascimento?.message}
-              dica="Opcional"
-            >
-              {(props) => (
-                <Controller
-                  control={control}
-                  name="data_nascimento"
-                  render={({ field }) => (
-                    <DatePicker
-                      id={props.id}
-                      aria-invalid={props['aria-invalid']}
-                      aria-describedby={props['aria-describedby']}
-                      valor={field.value || null}
-                      aoMudar={(valor) => field.onChange(valor ?? '')}
-                      placeholder="Selecione a data"
-                    />
-                  )}
-                />
-              )}
-            </Field>
-          </div>
+              <div className="rounded-xl border border-border">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-start px-3"
+                  aria-expanded={maisInformacoesAberto}
+                  aria-controls="cliente-mais-informacoes"
+                  onClick={() => setMaisInformacoesAberto((atual) => !atual)}
+                >
+                  <span className="flex-1 text-left">Mais informações</span>
+                  <span className="text-xs font-normal text-muted-foreground">Opcional</span>
+                  {maisInformacoesAberto ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+                </Button>
 
-          <Field id="cliente-observacoes" rotulo="Observações" erro={errors.observacoes?.message} dica="Opcional">
-            {(props) => (
-              <Textarea {...props} {...register('observacoes')} placeholder="Preferências de corte, indicações, alergias..." />
-            )}
-          </Field>
+                {maisInformacoesAberto ? (
+                  <div id="cliente-mais-informacoes" className="space-y-4 border-t border-border p-3">
+                    <Field
+                      id="cliente-nascimento"
+                      rotulo="Data de nascimento"
+                      erro={errors.data_nascimento?.message}
+                      dica="Opcional"
+                    >
+                      {(props) => (
+                        <Controller
+                          control={control}
+                          name="data_nascimento"
+                          render={({ field }) => (
+                            <DatePicker
+                              id={props.id}
+                              aria-invalid={props['aria-invalid']}
+                              aria-describedby={props['aria-describedby']}
+                              valor={field.value || null}
+                              aoMudar={(valor) => field.onChange(valor ?? '')}
+                              placeholder="Selecione a data"
+                              bloquearFuturo
+                            />
+                          )}
+                        />
+                      )}
+                    </Field>
 
-          <div className="flex items-center justify-between rounded-lg border border-border p-3">
-            <div className="space-y-0.5">
-              <Label htmlFor="cliente-status">Cliente ativo</Label>
-              <p className="text-xs text-muted-foreground">Clientes inativos deixam de aparecer nas listagens padrão.</p>
+                    <Field id="cliente-observacoes" rotulo="Observações" erro={errors.observacoes?.message} dica="Opcional">
+                      {(props) => (
+                        <Textarea
+                          {...props}
+                          {...register('observacoes')}
+                          placeholder="Preferências de corte, indicações, alergias..."
+                          maxLength={500}
+                        />
+                      )}
+                    </Field>
+                  </div>
+                ) : null}
+              </div>
+
+              {emEdicao ? (
+                <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="cliente-status">Cliente ativo</Label>
+                    <p className="text-xs text-muted-foreground">Clientes inativos deixam de aparecer nas listagens padrão.</p>
+                  </div>
+                  <Switch
+                    id="cliente-status"
+                    checked={status === 'ativo'}
+                    onCheckedChange={(marcado) =>
+                      setValue('status', marcado ? 'ativo' : 'inativo', { shouldDirty: true })
+                    }
+                  />
+                </div>
+              ) : null}
             </div>
-            <Switch
-              id="cliente-status"
-              checked={status === 'ativo'}
-              onCheckedChange={(marcado) => setValue('status', marcado ? 'ativo' : 'inativo')}
-            />
-          </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => aoMudarAberto(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : emEdicao ? 'Salvar alterações' : 'Cadastrar cliente'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter className="shrink-0 border-t border-border bg-card p-3 pb-[calc(.75rem+env(safe-area-inset-bottom))] sm:p-4">
+              <Button type="button" variant="outline" onClick={solicitarFechamento}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Salvando...' : emEdicao ? 'Salvar alterações' : 'Cadastrar cliente'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        aberto={confirmarDescarte}
+        aoMudarAberto={setConfirmarDescarte}
+        titulo="Descartar alterações?"
+        descricao="Os dados preenchidos neste formulário serão perdidos."
+        textoConfirmar="Descartar"
+        destrutivo
+        aoConfirmar={() => {
+          setConfirmarDescarte(false)
+          aoMudarAberto(false)
+        }}
+      />
+    </>
   )
 }

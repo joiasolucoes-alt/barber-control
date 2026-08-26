@@ -1,10 +1,13 @@
-import { agora, novoId, type BarberRepository } from '@/data/repository'
-import { gerarBaseSimulada, type BaseSimulada } from '@/data/seed'
+import { z } from 'zod'
+
+import { criarBaseLocalVazia, removerDadosDemonstracao, type BaseLocal } from '@/data/local-base'
+import { agora, novoId, RepositoryError, type BarberRepository } from '@/data/repository'
 import type {
   Cliente,
   ClienteInput,
   Servico,
   ServicoInput,
+  ServicoRealizado,
   StatusRegistro,
   Visita,
   VisitaDetalhada,
@@ -12,15 +15,72 @@ import type {
   VisitaServico,
 } from '@/types'
 
-const CHAVE_STORAGE = 'barber-control:v1'
-/** Pequena latência artificial para exercitar os estados de carregamento. */
-const LATENCIA_MS = 180
+const CHAVE_STORAGE = 'barber-control:v2'
+const CHAVE_STORAGE_ANTIGA = 'barber-control:v1'
 
-function esperar<T>(valor: T): Promise<T> {
-  return new Promise((resolve) => setTimeout(() => resolve(valor), LATENCIA_MS))
+const statusSchema = z.enum(['ativo', 'inativo'])
+const basePersistidaSchema = z.object({
+  clientes: z.array(
+    z.object({
+      id: z.string(),
+      nome: z.string(),
+      telefone: z.string().nullable(),
+      data_nascimento: z.string().nullable(),
+      observacoes: z.string().nullable(),
+      status: statusSchema,
+      created_at: z.string(),
+      updated_at: z.string(),
+    }),
+  ),
+  servicos: z.array(
+    z.object({
+      id: z.string(),
+      nome: z.string(),
+      descricao: z.string().nullable(),
+      preco: z.number().nullable(),
+      duracao_estimada: z.number().nullable(),
+      status: statusSchema,
+      created_at: z.string(),
+      updated_at: z.string(),
+    }),
+  ),
+  visitas: z.array(
+    z.object({
+      id: z.string(),
+      cliente_id: z.string(),
+      data_atendimento: z.string(),
+      observacoes: z.string().nullable(),
+      created_at: z.string(),
+      updated_at: z.string(),
+    }),
+  ),
+  visitaServicos: z.array(
+    z.object({
+      id: z.string(),
+      visita_id: z.string(),
+      servico_id: z.string(),
+      preco_cobrado: z.number().nullable().optional(),
+    }),
+  ),
+})
+
+function migrarBasePersistida(base: z.infer<typeof basePersistidaSchema>): BaseLocal {
+  const precoPorServico = new Map(base.servicos.map((servico) => [servico.id, servico.preco]))
+  return {
+    ...base,
+    visitaServicos: base.visitaServicos.map((vinculo) => ({
+      ...vinculo,
+      preco_cobrado:
+        vinculo.preco_cobrado !== undefined ? vinculo.preco_cobrado : (precoPorServico.get(vinculo.servico_id) ?? null),
+    })),
+  }
 }
 
-function persistir(base: BaseSimulada): void {
+function esperar<T>(valor: T): Promise<T> {
+  return Promise.resolve(valor)
+}
+
+function persistir(base: BaseLocal): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(CHAVE_STORAGE, JSON.stringify(base))
@@ -29,32 +89,44 @@ function persistir(base: BaseSimulada): void {
   }
 }
 
-function carregar(): BaseSimulada {
-  if (typeof window === 'undefined') return gerarBaseSimulada()
+function lerBasePersistida(chave: string): BaseLocal | null {
+  const bruto = window.localStorage.getItem(chave)
+  if (!bruto) return null
+  const resultado = basePersistidaSchema.safeParse(JSON.parse(bruto))
+  return resultado.success ? migrarBasePersistida(resultado.data) : null
+}
+
+function carregar(): BaseLocal {
+  if (typeof window === 'undefined') return criarBaseLocalVazia()
   try {
-    const bruto = window.localStorage.getItem(CHAVE_STORAGE)
-    if (bruto) {
-      const dados = JSON.parse(bruto) as BaseSimulada
-      if (dados.clientes && dados.servicos && dados.visitas && dados.visitaServicos) {
-        return dados
-      }
+    const baseAtual = lerBasePersistida(CHAVE_STORAGE)
+    if (baseAtual) {
+      persistir(baseAtual)
+      return baseAtual
+    }
+
+    const baseAntiga = lerBasePersistida(CHAVE_STORAGE_ANTIGA)
+    if (baseAntiga) {
+      const baseMigrada = removerDadosDemonstracao(baseAntiga)
+      persistir(baseMigrada)
+      window.localStorage.removeItem(CHAVE_STORAGE_ANTIGA)
+      return baseMigrada
     }
   } catch {
-    // Storage corrompido ou indisponível: recomeça a partir da base simulada.
+    // Storage corrompido ou indisponível: recomeça com uma base vazia.
   }
-  const base = gerarBaseSimulada()
+  const base = criarBaseLocalVazia()
   persistir(base)
   return base
 }
 
 /**
- * Repositório local: mantém a base simulada em `localStorage`.
- * Implementação padrão enquanto o Supabase não está conectado.
+ * Repositório local: começa vazio e mantém os registros em `localStorage`.
  */
 export class LocalRepository implements BarberRepository {
-  readonly nome = 'Dados locais (demonstração)'
+  readonly nome = 'Dados neste aparelho'
 
-  private base: BaseSimulada
+  private base: BaseLocal
 
   constructor() {
     this.base = carregar()
@@ -68,8 +140,11 @@ export class LocalRepository implements BarberRepository {
     const cliente = this.base.clientes.find((item) => item.id === visita.cliente_id)
     const vinculos = this.base.visitaServicos.filter((item) => item.visita_id === visita.id)
     const servicos = vinculos
-      .map((vinculo) => this.base.servicos.find((servico) => servico.id === vinculo.servico_id))
-      .filter((servico): servico is Servico => Boolean(servico))
+      .map((vinculo) => {
+        const servico = this.base.servicos.find((item) => item.id === vinculo.servico_id)
+        return servico ? { ...servico, preco_cobrado: vinculo.preco_cobrado } : null
+      })
+      .filter((servico): servico is ServicoRealizado => Boolean(servico))
 
     return {
       ...visita,
@@ -87,14 +162,49 @@ export class LocalRepository implements BarberRepository {
     }
   }
 
-  private trocarServicos(visitaId: string, servicoIds: string[]) {
-    this.base.visitaServicos = this.base.visitaServicos.filter((item) => item.visita_id !== visitaId)
-    const novos: VisitaServico[] = servicoIds.map((servicoId) => ({
-      id: novoId(),
-      visita_id: visitaId,
-      servico_id: servicoId,
-    }))
+  private trocarServicos(
+    visitaId: string,
+    servicoIds: string[],
+    precosCobrados: Record<string, number | null> = {},
+  ) {
+    const idsDesejados = new Set(servicoIds)
+    const existentes = this.base.visitaServicos.filter((item) => item.visita_id === visitaId)
+    const idsExistentes = new Set(existentes.map((item) => item.servico_id))
+
+    this.base.visitaServicos = this.base.visitaServicos.filter(
+      (item) => item.visita_id !== visitaId || idsDesejados.has(item.servico_id),
+    )
+
+    this.base.visitaServicos = this.base.visitaServicos.map((vinculo) =>
+      vinculo.visita_id === visitaId && Object.hasOwn(precosCobrados, vinculo.servico_id)
+        ? { ...vinculo, preco_cobrado: precosCobrados[vinculo.servico_id] }
+        : vinculo,
+    )
+
+    const novos: VisitaServico[] = servicoIds
+      .filter((servicoId) => !idsExistentes.has(servicoId))
+      .map((servicoId) => ({
+        id: novoId(),
+        visita_id: visitaId,
+        servico_id: servicoId,
+        preco_cobrado: Object.hasOwn(precosCobrados, servicoId)
+          ? precosCobrados[servicoId]
+          : (this.base.servicos.find((servico) => servico.id === servicoId)?.preco ?? null),
+      }))
     this.base.visitaServicos.push(...novos)
+  }
+
+  private validarVisita(input: VisitaInput) {
+    const cliente = this.base.clientes.find((item) => item.id === input.cliente_id)
+    if (!cliente) throw new RepositoryError('O cliente selecionado não existe mais.')
+
+    const idsUnicos = new Set(input.servico_ids)
+    if (idsUnicos.size !== input.servico_ids.length) {
+      throw new RepositoryError('A visita contém serviços duplicados.')
+    }
+
+    const todosExistem = input.servico_ids.every((id) => this.base.servicos.some((servico) => servico.id === id))
+    if (!todosExistem) throw new RepositoryError('Um dos serviços selecionados não existe mais.')
   }
 
   async listarClientes(): Promise<Cliente[]> {
@@ -145,6 +255,15 @@ export class LocalRepository implements BarberRepository {
     return esperar(atualizado)
   }
 
+  async excluirCliente(id: string): Promise<void> {
+    if (this.base.visitas.some((visita) => visita.cliente_id === id)) {
+      throw new RepositoryError('Este cliente possui atendimentos. Inative-o para preservar o histórico.')
+    }
+    this.base.clientes = this.base.clientes.filter((cliente) => cliente.id !== id)
+    this.salvar()
+    return esperar(undefined)
+  }
+
   async listarServicos(): Promise<Servico[]> {
     return esperar([...this.base.servicos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')))
   }
@@ -193,6 +312,15 @@ export class LocalRepository implements BarberRepository {
     return esperar(atualizado)
   }
 
+  async excluirServico(id: string): Promise<void> {
+    if (this.base.visitaServicos.some((vinculo) => vinculo.servico_id === id)) {
+      throw new RepositoryError('Este serviço possui atendimentos. Inative-o para preservar o histórico.')
+    }
+    this.base.servicos = this.base.servicos.filter((servico) => servico.id !== id)
+    this.salvar()
+    return esperar(undefined)
+  }
+
   async listarVisitas(): Promise<VisitaDetalhada[]> {
     const detalhadas = this.base.visitas
       .map((visita) => this.detalhar(visita))
@@ -206,6 +334,7 @@ export class LocalRepository implements BarberRepository {
   }
 
   async criarVisita(input: VisitaInput): Promise<VisitaDetalhada> {
+    this.validarVisita(input)
     const timestamp = agora()
     const visita: Visita = {
       id: novoId(),
@@ -216,7 +345,7 @@ export class LocalRepository implements BarberRepository {
       updated_at: timestamp,
     }
     this.base.visitas.push(visita)
-    this.trocarServicos(visita.id, input.servico_ids)
+    this.trocarServicos(visita.id, input.servico_ids, input.precos_cobrados)
     this.salvar()
     return esperar(this.detalhar(visita))
   }
@@ -224,6 +353,7 @@ export class LocalRepository implements BarberRepository {
   async atualizarVisita(id: string, input: VisitaInput): Promise<VisitaDetalhada> {
     const indice = this.base.visitas.findIndex((visita) => visita.id === id)
     if (indice < 0) throw new Error('Visita não encontrada.')
+    this.validarVisita(input)
     const atualizada: Visita = {
       ...this.base.visitas[indice],
       cliente_id: input.cliente_id,
@@ -232,7 +362,7 @@ export class LocalRepository implements BarberRepository {
       updated_at: agora(),
     }
     this.base.visitas[indice] = atualizada
-    this.trocarServicos(id, input.servico_ids)
+    this.trocarServicos(id, input.servico_ids, input.precos_cobrados)
     this.salvar()
     return esperar(this.detalhar(atualizada))
   }
@@ -245,8 +375,9 @@ export class LocalRepository implements BarberRepository {
   }
 }
 
-/** Utilitário exposto na UI para recriar a base de demonstração. */
+/** Utilitário exposto para apagar os dados armazenados neste navegador. */
 export function reiniciarBaseLocal(): void {
   if (typeof window === 'undefined') return
   window.localStorage.removeItem(CHAVE_STORAGE)
+  window.localStorage.removeItem(CHAVE_STORAGE_ANTIGA)
 }

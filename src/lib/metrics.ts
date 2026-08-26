@@ -1,6 +1,17 @@
-import { differenceInCalendarDays, eachDayOfInterval, startOfDay, subDays } from 'date-fns'
+import {
+  differenceInCalendarDays,
+  eachDayOfInterval,
+  eachMonthOfInterval,
+  format,
+  startOfDay,
+  startOfMonth,
+  subDays,
+  subMonths,
+} from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 import { dataISOParaDate, dateParaDataISO } from '@/lib/format'
+import { valorDaVisita } from '@/lib/visitas'
 import type { Cliente, DataISO, VisitaDetalhada } from '@/types'
 import type { PeriodoOpcao } from '@/types/periodo'
 
@@ -41,6 +52,19 @@ export function filtrarVisitasPorPeriodo(
   return visitas.filter((visita) => visitaDentroDoIntervalo(visita, intervalo))
 }
 
+/** Período imediatamente anterior, com a mesma quantidade de dias. */
+export function intervaloAnteriorDoPeriodo(
+  periodo: PeriodoOpcao,
+  intervaloAtual: IntervaloPeriodo,
+): IntervaloPeriodo | null {
+  if (periodo.dias === null || !intervaloAtual.inicio) return null
+
+  return {
+    inicio: subDays(intervaloAtual.inicio, periodo.dias),
+    fim: subDays(intervaloAtual.inicio, 1),
+  }
+}
+
 export interface Indicadores {
   totalClientes: number
   clientesAtivos: number
@@ -50,6 +74,30 @@ export interface Indicadores {
   servicosRealizados: number
   ticketMedio: number
   faturamentoEstimado: number
+}
+
+export interface ResumoHoje {
+  atendimentos: number
+  receita: number
+  ticketMedio: number
+  clientesUnicos: number
+}
+
+/** Indicadores operacionais do dia, sempre baseados no preço congelado da visita. */
+export function calcularResumoHoje(
+  visitas: VisitaDetalhada[],
+  hoje = new Date(),
+): ResumoHoje {
+  const dataHoje = dateParaDataISO(hoje)
+  const visitasHoje = visitas.filter((visita) => visita.data_atendimento === dataHoje)
+  const receita = visitasHoje.reduce((total, visita) => total + valorDaVisita(visita), 0)
+
+  return {
+    atendimentos: visitasHoje.length,
+    receita,
+    ticketMedio: visitasHoje.length > 0 ? receita / visitasHoje.length : 0,
+    clientesUnicos: new Set(visitasHoje.map((visita) => visita.cliente_id)).size,
+  }
 }
 
 /**
@@ -71,7 +119,7 @@ export function calcularIndicadores(
   const servicosRealizados = visitasDoPeriodo.reduce((total, visita) => total + visita.servicos.length, 0)
 
   const faturamentoEstimado = visitasDoPeriodo.reduce(
-    (total, visita) => total + visita.servicos.reduce((soma, servico) => soma + (servico.preco ?? 0), 0),
+    (total, visita) => total + valorDaVisita(visita),
     0,
   )
 
@@ -85,6 +133,142 @@ export function calcularIndicadores(
     faturamentoEstimado,
     ticketMedio: visitasDoPeriodo.length > 0 ? faturamentoEstimado / visitasDoPeriodo.length : 0,
   }
+}
+
+export interface VariacaoIndicador {
+  valorAnterior: number
+  /** null quando o período anterior era zero e não existe uma base percentual válida. */
+  percentual: number | null
+}
+
+export interface ComparativoIndicadores {
+  clientesUnicosNoPeriodo: VariacaoIndicador
+  visitasNoPeriodo: VariacaoIndicador
+  servicosRealizados: VariacaoIndicador
+  faturamentoEstimado: VariacaoIndicador
+}
+
+function compararValor(valorAtual: number, valorAnterior: number): VariacaoIndicador {
+  if (valorAnterior === 0) {
+    return { valorAnterior, percentual: valorAtual === 0 ? 0 : null }
+  }
+
+  return {
+    valorAnterior,
+    percentual: ((valorAtual - valorAnterior) / valorAnterior) * 100,
+  }
+}
+
+/** Compara os quatro indicadores controlados pelo filtro com o período anterior. */
+export function compararIndicadores(
+  atuais: Indicadores,
+  anteriores: Indicadores | null,
+): ComparativoIndicadores | null {
+  if (!anteriores) return null
+
+  return {
+    clientesUnicosNoPeriodo: compararValor(
+      atuais.clientesUnicosNoPeriodo,
+      anteriores.clientesUnicosNoPeriodo,
+    ),
+    visitasNoPeriodo: compararValor(atuais.visitasNoPeriodo, anteriores.visitasNoPeriodo),
+    servicosRealizados: compararValor(atuais.servicosRealizados, anteriores.servicosRealizados),
+    faturamentoEstimado: compararValor(atuais.faturamentoEstimado, anteriores.faturamentoEstimado),
+  }
+}
+
+export interface PontoNovosClientesMes {
+  mes: string
+  rotulo: string
+  total: number
+}
+
+/**
+ * Aquisição mensal medida pela primeira visita, não apenas pela data de cadastro.
+ * Mantém meses sem aquisição na série para o gráfico não esconder lacunas.
+ */
+export function serieNovosClientesPorMes(
+  visitas: VisitaDetalhada[],
+  hoje = new Date(),
+  quantidadeMeses = 12,
+): PontoNovosClientesMes[] {
+  const fim = startOfMonth(hoje)
+  const inicio = startOfMonth(subMonths(fim, Math.max(1, quantidadeMeses) - 1))
+  const primeiraVisitaPorCliente = new Map<string, DataISO>()
+
+  visitas.forEach((visita) => {
+    const atual = primeiraVisitaPorCliente.get(visita.cliente_id)
+    if (!atual || visita.data_atendimento < atual) {
+      primeiraVisitaPorCliente.set(visita.cliente_id, visita.data_atendimento)
+    }
+  })
+
+  const totais = new Map<string, number>()
+  primeiraVisitaPorCliente.forEach((data) => {
+    const mes = data.slice(0, 7)
+    totais.set(mes, (totais.get(mes) ?? 0) + 1)
+  })
+
+  return eachMonthOfInterval({ start: inicio, end: fim }).map((data) => {
+    const mes = format(data, 'yyyy-MM')
+    return {
+      mes,
+      rotulo: format(data, "MMM/yy", { locale: ptBR }).replace('.', ''),
+      total: totais.get(mes) ?? 0,
+    }
+  })
+}
+
+export interface TaxaRetorno {
+  dias: 30 | 60 | 90
+  elegiveis: number
+  retornaram: number
+  /** null quando ainda não há clientes com janela completa para análise. */
+  percentual: number | null
+}
+
+/**
+ * Retenção por coorte: só entra no denominador quem já teve a janela inteira
+ * para voltar. Uma segunda visita no mesmo dia não é considerada retorno.
+ */
+export function calcularTaxasRetorno(
+  visitas: VisitaDetalhada[],
+  hoje = new Date(),
+): TaxaRetorno[] {
+  const datasPorCliente = new Map<string, Set<DataISO>>()
+  visitas.forEach((visita) => {
+    const datas = datasPorCliente.get(visita.cliente_id) ?? new Set<DataISO>()
+    datas.add(visita.data_atendimento)
+    datasPorCliente.set(visita.cliente_id, datas)
+  })
+
+  const historicos = [...datasPorCliente.values()]
+    .map((datas) => [...datas].sort())
+    .filter((datas) => datas.length > 0 && dataISOParaDate(datas[0]) <= hoje)
+
+  return ([30, 60, 90] as const).map((dias) => {
+    let elegiveis = 0
+    let retornaram = 0
+
+    historicos.forEach((datas) => {
+      const primeira = dataISOParaDate(datas[0])
+      if (differenceInCalendarDays(hoje, primeira) < dias) return
+
+      elegiveis += 1
+      const retornou = datas.slice(1).some((data) => {
+        const intervalo = differenceInCalendarDays(dataISOParaDate(data), primeira)
+        return intervalo > 0 && intervalo <= dias
+      })
+      if (retornou) retornaram += 1
+    })
+
+    return {
+      dias,
+      elegiveis,
+      retornaram,
+      percentual: elegiveis > 0 ? (retornaram / elegiveis) * 100 : null,
+    }
+  })
 }
 
 export interface PontoSerieDiaria {
@@ -171,7 +355,7 @@ export function rankingServicos(visitas: VisitaDetalhada[]): ItemRankingServico[
         receita: 0,
       }
       atual.total += 1
-      atual.receita += servico.preco ?? 0
+      atual.receita += servico.preco_cobrado ?? 0
       acumulado.set(servico.id, atual)
     })
   })

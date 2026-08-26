@@ -1,7 +1,8 @@
-import { differenceInCalendarDays } from 'date-fns'
+import { differenceInCalendarDays, startOfDay } from 'date-fns'
 
 import { apenasDigitos, dataISOParaDate, dateParaDataISO } from '@/lib/format'
 import { rankingServicos, type ItemRankingServico } from '@/lib/metrics'
+import { valorDaVisita } from '@/lib/visitas'
 import type { Cliente, DataISO, VisitaDetalhada } from '@/types'
 
 /**
@@ -114,10 +115,7 @@ export function analisarCliente(
     }
   }
 
-  const totalGasto = visitas.reduce(
-    (total, visita) => total + visita.servicos.reduce((soma, servico) => soma + (servico.preco ?? 0), 0),
-    0,
-  )
+  const totalGasto = visitas.reduce((total, visita) => total + valorDaVisita(visita), 0)
 
   return {
     cliente,
@@ -179,6 +177,40 @@ export interface Aniversariante {
   ehHoje: boolean
 }
 
+export interface ProximoAniversariante extends Aniversariante {
+  proximaData: DataISO
+  diasAte: number
+}
+
+/** Próximos aniversários a partir de hoje, atravessando a virada do ano. */
+export function proximosAniversariantes(
+  clientes: Cliente[],
+  hoje = new Date(),
+  limite = 3,
+): ProximoAniversariante[] {
+  const dataBase = startOfDay(hoje)
+
+  return clientes
+    .filter((cliente) => cliente.status === 'ativo' && cliente.data_nascimento)
+    .map((cliente) => {
+      const [anoNascimento, mes, dia] = (cliente.data_nascimento as string).split('-').map(Number)
+      let proxima = new Date(dataBase.getFullYear(), mes - 1, dia)
+      if (proxima < dataBase) proxima = new Date(dataBase.getFullYear() + 1, mes - 1, dia)
+
+      return {
+        cliente,
+        dia,
+        mes,
+        idade: anoNascimento ? proxima.getFullYear() - anoNascimento : null,
+        ehHoje: differenceInCalendarDays(proxima, dataBase) === 0,
+        proximaData: dateParaDataISO(proxima),
+        diasAte: differenceInCalendarDays(proxima, dataBase),
+      }
+    })
+    .sort((a, b) => a.diasAte - b.diasAte || a.cliente.nome.localeCompare(b.cliente.nome, 'pt-BR'))
+    .slice(0, Math.max(0, limite))
+}
+
 /** Clientes que fazem aniversário no mês informado, em ordem de dia. */
 export function aniversariantesDoMes(clientes: Cliente[], hoje = new Date()): Aniversariante[] {
   const mesAlvo = hoje.getMonth() + 1
@@ -218,6 +250,21 @@ export function resumirSituacoes(analises: AnaliseCliente[]): ResumoSituacoes {
   return { total: analises.length, porSituacao }
 }
 
+/** Clientes ativos com mais visitas no histórico; gasto desempata frequências iguais. */
+export function rankingClientesPorFrequencia(
+  analises: AnaliseCliente[],
+  limite = 6,
+): AnaliseCliente[] {
+  return analises
+    .filter((analise) => analise.cliente.status === 'ativo' && analise.totalVisitas > 0)
+    .sort((a, b) => {
+      if (b.totalVisitas !== a.totalVisitas) return b.totalVisitas - a.totalVisitas
+      if (b.totalGasto !== a.totalGasto) return b.totalGasto - a.totalGasto
+      return a.cliente.nome.localeCompare(b.cliente.nome, 'pt-BR')
+    })
+    .slice(0, Math.max(0, limite))
+}
+
 /**
  * Monta o link de conversa no WhatsApp. Retorna null quando o cliente não tem
  * telefone cadastrado — o campo é opcional.
@@ -237,5 +284,5 @@ export function primeiroNome(nome: string): string {
 }
 
 export function mensagemRetorno(cliente: Cliente): string {
-  return `Olá, ${primeiroNome(cliente.nome)}! Aqui é da barbearia. Faz um tempo que você não passa por aqui — que tal dar um trato no visual?`
+  return `Olá, ${primeiroNome(cliente.nome)}! Aqui é da André Garcia Barber Shop. Faz um tempo que você não passa por aqui — que tal dar um trato no visual?`
 }

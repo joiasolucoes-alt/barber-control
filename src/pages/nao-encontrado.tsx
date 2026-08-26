@@ -9,7 +9,7 @@ export function NaoEncontradoPage() {
     <EmptyState
       icone={<Compass />}
       titulo="Página não encontrada"
-      descricao="O endereço acessado não existe no Barber Control."
+      descricao="O endereço acessado não existe no sistema da André Garcia Barber Shop."
       acao={
         <Button asChild>
           <Link to="/">Voltar para o dashboard</Link>
