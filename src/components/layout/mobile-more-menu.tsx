@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Download,
+  FileDown,
   HardDrive,
   Info,
   Menu,
@@ -34,6 +35,7 @@ import { useBarberData } from '@/hooks/use-barber-data'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { usePwaInstall } from '@/hooks/use-pwa-install'
 import { useTema } from '@/hooks/use-theme'
+import { baixarBackup } from '@/lib/backup'
 import { cn } from '@/lib/utils'
 
 type TelaMais = 'menu' | 'dados' | 'sistema'
@@ -92,33 +94,51 @@ function CabecalhoInterno({ titulo, aoVoltar }: { titulo: string; aoVoltar: () =
 
 function ConteudoDados({ aoVoltar }: { aoVoltar: () => void }) {
   const online = useOnlineStatus()
-  const { usandoSupabase } = useBarberData()
+  const { usandoSupabase, fonte, clientes, servicos, visitas } = useBarberData()
+
+  function exportarBackup() {
+    const resumo = baixarBackup({ fonte, clientes, servicos, visitas })
+    toast.success('Backup exportado', {
+      description: `${resumo.clientes} clientes, ${resumo.servicos} serviços e ${resumo.visitas} visitas salvos no arquivo.`,
+    })
+  }
 
   return (
     <div className="space-y-4">
       <CabecalhoInterno titulo="Dados e segurança" aoVoltar={aoVoltar} />
-      <DataSourceCard className="bg-muted/25" />
+      <DataSourceCard className="bg-muted/25" mostrarBackup={false} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-border p-4">
           <p className="flex items-center gap-2 text-sm font-semibold">
             {online ? <Wifi aria-hidden className="h-4 w-4 text-emerald-500" /> : <WifiOff aria-hidden className="h-4 w-4 text-destructive" />}
-            {online ? 'Conectado à internet' : 'Sem conexão'}
+            {online ? 'Conectado à internet' : 'Modo offline ativo'}
           </p>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            O aplicativo continua acessível e informa quando a conexão não estiver disponível.
+            {online ? 'O aplicativo está pronto para sincronizar quando uma base online estiver ativa.' : 'Você pode continuar usando os dados que já estão neste aparelho.'}
           </p>
         </div>
         <div className="rounded-xl border border-border p-4">
           <p className="flex items-center gap-2 text-sm font-semibold">
             <ShieldCheck aria-hidden className="h-4 w-4 text-primary" />
-            {usandoSupabase ? 'Base sincronizada' : 'Armazenamento local'}
+            {usandoSupabase ? 'Base sincronizada' : 'Somente neste aparelho'}
           </p>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             {usandoSupabase
               ? 'Os registros usam a base configurada para a barbearia.'
-              : 'Esta versão usa uma base local de demonstração neste navegador.'}
+              : 'Os registros ficam neste navegador e não aparecem automaticamente em outro aparelho.'}
           </p>
         </div>
+      </div>
+      <div className="rounded-xl border border-border p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <FileDown aria-hidden className="h-4 w-4 text-primary" /> Exportar backup
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          Baixe uma cópia em JSON com clientes, serviços, visitas e valores históricos.
+        </p>
+        <Button type="button" variant="outline" className="mt-3 w-full" onClick={exportarBackup}>
+          <Download aria-hidden /> Baixar backup agora
+        </Button>
       </div>
     </div>
   )

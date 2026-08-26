@@ -11,13 +11,14 @@ export default defineConfig({
       injectRegister: 'auto',
       manifest: {
         id: '/',
-        name: 'André Garcia Barber Shop',
-        short_name: 'André Garcia',
+        name: 'André Garcia · Barber Control',
+        short_name: 'Barber Control',
         description: 'Controle de clientes, visitas e retenção da André Garcia Barber Shop.',
         lang: 'pt-BR',
         start_url: '/',
         scope: '/',
         display: 'standalone',
+        orientation: 'portrait-primary',
         background_color: '#0b0b0d',
         theme_color: '#0b0b0d',
         categories: ['business', 'productivity'],
@@ -35,7 +36,7 @@ export default defineConfig({
         shortcuts: [
           { name: 'Agenda', short_name: 'Agenda', url: '/agenda' },
           { name: 'Clientes', short_name: 'Clientes', url: '/clientes' },
-          { name: 'Visitas', short_name: 'Visitas', url: '/visitas' },
+          { name: 'Histórico', short_name: 'Histórico', url: '/agenda?visualizacao=lista' },
         ],
       },
       workbox: {

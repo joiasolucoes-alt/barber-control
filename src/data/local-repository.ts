@@ -115,7 +115,7 @@ function carregar(): BaseSimulada {
  * Implementação padrão enquanto o Supabase não está conectado.
  */
 export class LocalRepository implements BarberRepository {
-  readonly nome = 'Dados locais (demonstração)'
+  readonly nome = 'Dados neste aparelho'
 
   private base: BaseSimulada
 

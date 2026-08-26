@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import { Moon, Plus, Sun, WifiOff } from 'lucide-react'
 
 import { DataSourceCard } from '@/components/layout/data-source-card'
+import { FirstRunGuide } from '@/components/layout/first-run-guide'
 import { Logo } from '@/components/layout/logo'
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
 import { NAVEGACAO_ADMINISTRATIVA, NAVEGACAO_PRINCIPAL } from '@/components/layout/navigation'
@@ -114,6 +115,7 @@ export function AppShell() {
       </div>
 
       <MobileBottomNav aoNovaVisita={() => setVisitaAberta(true)} />
+      <FirstRunGuide />
       <VisitaFormDialog aberto={visitaAberta} aoMudarAberto={setVisitaAberta} />
     </div>
   )

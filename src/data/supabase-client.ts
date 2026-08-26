@@ -10,9 +10,7 @@ let cliente: SupabaseClient | null = null
 
 export function obterSupabase(): SupabaseClient {
   if (!supabaseConfigurado) {
-    throw new Error(
-      'Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env.',
-    )
+    throw new Error('A conexão com a base de dados não está disponível neste ambiente.')
   }
   if (!cliente) {
     cliente = createClient(url as string, anonKey as string)
