@@ -4,6 +4,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { ChevronDown, ChevronUp, Loader2, RotateCcw, StickyNote, UserPlus, X } from 'lucide-react'
 
 import { ClienteCombobox } from '@/components/clientes/cliente-combobox'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { DatePicker } from '@/components/common/date-picker'
 import { Field } from '@/components/common/field'
 import { ServicosSelector } from '@/components/visitas/servicos-selector'
@@ -20,7 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/sonner'
 import { useBarberData } from '@/hooks/use-barber-data'
-import { dateParaDataISO, formatarData, formatarMoeda, formatarTelefone, pluralizar } from '@/lib/format'
+import { dateParaDataISO, formatarData, formatarEntradaMoeda, formatarMoeda, formatarTelefone, pluralizar } from '@/lib/format'
 import { paraNumero, visitaSchema, type VisitaFormValues } from '@/lib/validators'
 import { ordenarServicosPorFrequencia, ultimaVisitaDoCliente, valorDaVisita } from '@/lib/visitas'
 import type { VisitaDetalhada } from '@/types'
@@ -59,6 +60,7 @@ export function VisitaFormDialog({
   const [erroRapido, setErroRapido] = React.useState<string | null>(null)
   const [salvandoRapido, setSalvandoRapido] = React.useState(false)
   const [observacoesAbertas, setObservacoesAbertas] = React.useState(false)
+  const [confirmarDescarte, setConfirmarDescarte] = React.useState(false)
 
   const {
     handleSubmit,
@@ -67,7 +69,7 @@ export function VisitaFormDialog({
     reset,
     getValues,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<VisitaFormValues>({
     resolver: zodResolver(visitaSchema),
     defaultValues: {
@@ -87,6 +89,7 @@ export function VisitaFormDialog({
     setNomeRapido('')
     setTelefoneRapido('')
     setErroRapido(null)
+    setConfirmarDescarte(false)
     setObservacoesAbertas(Boolean(visita?.observacoes))
     reset({
       cliente_id: visita?.cliente_id ?? visitaParaRepetir?.cliente_id ?? clienteIdInicial ?? '',
@@ -189,12 +192,21 @@ export function VisitaFormDialog({
   }
 
   function mudarPrecoCobrado(servicoId: string, valor: string) {
-    const valorLimpo = valor.replace(/[^\d,.]/g, '').replace(/(,.*),/g, '$1').slice(0, 10)
+    const valorLimpo = formatarEntradaMoeda(valor)
     setValue(
       'precos_cobrados',
       { ...getValues('precos_cobrados'), [servicoId]: valorLimpo },
       { shouldDirty: true, shouldValidate: true },
     )
+  }
+
+  function solicitarFechamento() {
+    const cadastroRapidoPreenchido = Boolean(nomeRapido.trim() || telefoneRapido.trim())
+    if ((isDirty || cadastroRapidoPreenchido) && !isSubmitting) {
+      setConfirmarDescarte(true)
+      return
+    }
+    aoMudarAberto(false)
   }
 
   function repetirUltimaVisita() {
@@ -241,7 +253,8 @@ export function VisitaFormDialog({
   }
 
   return (
-    <Dialog open={aberto} onOpenChange={aoMudarAberto}>
+    <>
+    <Dialog open={aberto} onOpenChange={(novoEstado) => (novoEstado ? aoMudarAberto(true) : solicitarFechamento())}>
       <DialogContent className="top-0 h-dvh max-h-dvh grid-rows-[auto_minmax(0,1fr)] gap-0 overflow-hidden rounded-none border-0 p-0 pb-0 [&>button]:top-[calc(.5rem+env(safe-area-inset-top))] sm:right-auto sm:h-auto sm:max-h-[92dvh] sm:max-w-2xl sm:gap-0 sm:rounded-xl sm:border sm:p-0 sm:[&>button]:top-3">
         <DialogHeader className="shrink-0 border-b border-border p-4 pr-16 pt-[calc(1rem+env(safe-area-inset-top))] sm:p-5 sm:pr-16">
           <DialogTitle>{emEdicao ? 'Editar visita' : 'Registrar visita'}</DialogTitle>
@@ -438,7 +451,7 @@ export function VisitaFormDialog({
               <strong className="metric-number text-2xl text-primary">{formatarMoeda(totalCobrado)}</strong>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => aoMudarAberto(false)}>
+              <Button type="button" variant="outline" onClick={solicitarFechamento}>
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
@@ -449,5 +462,18 @@ export function VisitaFormDialog({
         </form>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog
+      aberto={confirmarDescarte}
+      aoMudarAberto={setConfirmarDescarte}
+      titulo="Descartar alterações?"
+      descricao="Os dados preenchidos neste atendimento serão perdidos."
+      textoConfirmar="Descartar"
+      destrutivo
+      aoConfirmar={() => {
+        setConfirmarDescarte(false)
+        aoMudarAberto(false)
+      }}
+    />
+    </>
   )
 }

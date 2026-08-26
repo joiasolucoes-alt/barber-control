@@ -91,6 +91,20 @@ export function formatarTelefone(valor: string): string {
   return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`
 }
 
+/** Mantém uma entrada monetária legível, com vírgula e no máximo duas casas decimais. */
+export function formatarEntradaMoeda(valor: string): string {
+  const normalizado = valor.replace('.', ',').replace(/[^\d,]/g, '')
+  const [inteiro = '', ...decimais] = normalizado.split(',')
+  const parteInteira = inteiro.slice(0, 6)
+  if (decimais.length === 0) return parteInteira
+  return `${parteInteira},${decimais.join('').slice(0, 2)}`
+}
+
+/** Aceita somente minutos inteiros, limitando a entrada a quatro dígitos. */
+export function formatarEntradaDuracao(valor: string): string {
+  return apenasDigitos(valor).slice(0, 4)
+}
+
 export function apenasDigitos(valor: string): string {
   return valor.replace(/\D/g, '')
 }
