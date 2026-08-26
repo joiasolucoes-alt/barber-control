@@ -44,7 +44,8 @@ export function DistribuicaoSituacoes({ resumo, carregando }: DistribuicaoSituac
           />
         ) : (
           <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(160px,0.85fr)] lg:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(160px,0.85fr)]">
-            <div className="relative h-[190px] min-w-0">
+            <p className="sr-only">Total de {formatarNumero(resumo.total)} clientes ativos. A distribuição detalhada está na lista a seguir.</p>
+            <div aria-hidden="true" className="relative h-[190px] min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <RechartsPieChart>
                   <Pie
