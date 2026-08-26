@@ -32,7 +32,7 @@ export function ServicoMobileCard({
 }: ServicoMobileCardProps) {
   return (
     <Card className="content-auto">
-      <CardContent className="space-y-4 p-4">
+      <CardContent className="space-y-3 p-3.5">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <p className="font-semibold">{servico.nome}</p>
@@ -68,18 +68,18 @@ export function ServicoMobileCard({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <dl className="grid grid-cols-3 divide-x divide-border rounded-lg bg-muted/40 py-3 text-center">
+        <dl className="grid grid-cols-3 divide-x divide-border rounded-lg bg-muted/40 py-2.5 text-center">
           <div className="px-2">
             <dt className="ui-eyebrow">Preço</dt>
-            <dd className="mt-1 text-xs font-semibold">{formatarMoeda(servico.preco)}</dd>
+            <dd className="metric-number mt-1 text-sm font-semibold text-primary">{formatarMoeda(servico.preco)}</dd>
           </div>
           <div className="px-2">
             <dt className="ui-eyebrow">Duração</dt>
-            <dd className="mt-1 text-xs font-semibold">{formatarDuracao(servico.duracao_estimada)}</dd>
+            <dd className="mt-1 text-sm font-semibold">{formatarDuracao(servico.duracao_estimada)}</dd>
           </div>
           <div className="px-2">
-            <dt className="ui-eyebrow">Realizados</dt>
-            <dd className="mt-1 text-xs font-semibold tabular-nums">{formatarNumero(realizados)}</dd>
+            <dt className="ui-eyebrow">Frequência</dt>
+            <dd className="mt-1 text-sm font-semibold tabular-nums">{formatarNumero(realizados)}×</dd>
           </div>
         </dl>
       </CardContent>

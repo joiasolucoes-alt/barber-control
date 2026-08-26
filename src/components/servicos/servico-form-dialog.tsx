@@ -75,7 +75,7 @@ export function ServicoFormDialog({ aberto, aoMudarAberto, servico }: ServicoFor
         descricao: valores.descricao || null,
         preco: paraNumero(valores.preco),
         duracao_estimada: paraNumero(valores.duracao_estimada),
-        status: valores.status,
+        status: servico ? valores.status : 'ativo' as const,
       }
       const salvo = servico ? await atualizarServico(servico.id, payload) : await criarServico(payload)
 
@@ -141,17 +141,19 @@ export function ServicoFormDialog({ aberto, aoMudarAberto, servico }: ServicoFor
             </Field>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border p-3">
-            <div className="space-y-0.5">
-              <Label htmlFor="servico-status">Serviço ativo</Label>
-              <p className="text-xs text-muted-foreground">Serviços inativos não podem ser escolhidos em novas visitas.</p>
+          {emEdicao ? (
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="servico-status">Serviço ativo</Label>
+                <p className="text-xs text-muted-foreground">Serviços inativos não podem ser escolhidos em novas visitas.</p>
+              </div>
+              <Switch
+                id="servico-status"
+                checked={status === 'ativo'}
+                onCheckedChange={(marcado) => setValue('status', marcado ? 'ativo' : 'inativo')}
+              />
             </div>
-            <Switch
-              id="servico-status"
-              checked={status === 'ativo'}
-              onCheckedChange={(marcado) => setValue('status', marcado ? 'ativo' : 'inativo')}
-            />
-          </div>
+          ) : null}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => aoMudarAberto(false)}>

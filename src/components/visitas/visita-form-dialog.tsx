@@ -38,6 +38,8 @@ interface VisitaFormDialogProps {
   clienteIdInicial?: string
   /** Pré-seleciona uma data (usado na visualização diária). */
   dataInicial?: string
+  /** Replica serviços e valores de uma visita anterior em um novo atendimento. */
+  visitaParaRepetir?: VisitaDetalhada | null
 }
 
 export function VisitaFormDialog({
@@ -46,6 +48,7 @@ export function VisitaFormDialog({
   visita,
   clienteIdInicial,
   dataInicial,
+  visitaParaRepetir,
 }: VisitaFormDialogProps) {
   const { clientes, servicos, visitas, criarVisita, atualizarVisita, criarCliente } = useBarberData()
   const emEdicao = Boolean(visita)
@@ -78,21 +81,23 @@ export function VisitaFormDialog({
 
   React.useEffect(() => {
     if (!aberto) return
+    const idsAtivos = new Set(servicos.filter((servico) => servico.status === 'ativo').map((servico) => servico.id))
+    const servicosDaRepeticao = visitaParaRepetir?.servicos.filter((servico) => idsAtivos.has(servico.id)) ?? []
     setCadastroRapidoAberto(false)
     setNomeRapido('')
     setTelefoneRapido('')
     setErroRapido(null)
     setObservacoesAbertas(Boolean(visita?.observacoes))
     reset({
-      cliente_id: visita?.cliente_id ?? clienteIdInicial ?? '',
+      cliente_id: visita?.cliente_id ?? visitaParaRepetir?.cliente_id ?? clienteIdInicial ?? '',
       data_atendimento: visita?.data_atendimento ?? dataInicial ?? dateParaDataISO(new Date()),
-      servico_ids: visita?.servicos.map((servico) => servico.id) ?? [],
+      servico_ids: visita?.servicos.map((servico) => servico.id) ?? servicosDaRepeticao.map((servico) => servico.id),
       precos_cobrados: Object.fromEntries(
-        visita?.servicos.map((servico) => [servico.id, precoParaTexto(servico.preco_cobrado)]) ?? [],
+        (visita?.servicos ?? servicosDaRepeticao).map((servico) => [servico.id, precoParaTexto(servico.preco_cobrado)]),
       ),
       observacoes: visita?.observacoes ?? '',
     })
-  }, [aberto, visita, clienteIdInicial, dataInicial, reset])
+  }, [aberto, visita, visitaParaRepetir, clienteIdInicial, dataInicial, reset, servicos])
 
   const clienteSelecionado = useWatch({ control, name: 'cliente_id' })
   const servicosSelecionados = useWatch({ control, name: 'servico_ids' })

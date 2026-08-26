@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Ban, CheckCircle2, MoreHorizontal, Pencil, Plus, Scissors, Trash2 } from 'lucide-react'
+import { ArrowUpDown, Ban, CheckCircle2, MoreHorizontal, Pencil, Plus, Scissors, Trash2 } from 'lucide-react'
 
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { ErrorState, TableSkeleton } from '@/components/common/data-state'
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/components/ui/sonner'
 import { useBarberData } from '@/hooks/use-barber-data'
 import { useDebounce } from '@/hooks/use-debounce'
@@ -26,10 +27,15 @@ import { formatarDuracao, formatarMoeda, formatarNumero, normalizar, pluralizar 
 import { rankingServicos } from '@/lib/metrics'
 import type { Servico, StatusRegistro } from '@/types'
 
+type OrdenacaoServico = 'frequencia' | 'nome' | 'preco-maior' | 'preco-menor' | 'status'
+
+const LIMITE_EXIBIR_BUSCA = 8
+
 export function ServicosPage() {
   const { servicos, visitas, carregando, erro, recarregar, alterarStatusServico, excluirServico } = useBarberData()
 
   const [busca, setBusca] = React.useState('')
+  const [ordenacao, setOrdenacao] = React.useState<OrdenacaoServico>('frequencia')
   const [formAberto, setFormAberto] = React.useState(false)
   const [servicoEmEdicao, setServicoEmEdicao] = React.useState<Servico | null>(null)
   const [servicoParaInativar, setServicoParaInativar] = React.useState<Servico | null>(null)
@@ -45,12 +51,21 @@ export function ServicosPage() {
 
   const filtrados = React.useMemo(() => {
     const termo = normalizar(buscaAdiada)
-    if (!termo) return servicos
-    return servicos.filter(
-      (servico) =>
-        normalizar(servico.nome).includes(termo) || normalizar(servico.descricao ?? '').includes(termo),
-    )
-  }, [servicos, buscaAdiada])
+    const lista = termo
+      ? servicos.filter(
+          (servico) =>
+            normalizar(servico.nome).includes(termo) || normalizar(servico.descricao ?? '').includes(termo),
+        )
+      : [...servicos]
+
+    return lista.sort((a, b) => {
+      if (ordenacao === 'nome') return a.nome.localeCompare(b.nome, 'pt-BR')
+      if (ordenacao === 'preco-maior') return (b.preco ?? 0) - (a.preco ?? 0) || a.nome.localeCompare(b.nome, 'pt-BR')
+      if (ordenacao === 'preco-menor') return (a.preco ?? 0) - (b.preco ?? 0) || a.nome.localeCompare(b.nome, 'pt-BR')
+      if (ordenacao === 'status') return a.status.localeCompare(b.status) || a.nome.localeCompare(b.nome, 'pt-BR')
+      return (usoPorServico.get(b.id) ?? 0) - (usoPorServico.get(a.id) ?? 0) || a.nome.localeCompare(b.nome, 'pt-BR')
+    })
+  }, [servicos, buscaAdiada, ordenacao, usoPorServico])
 
   const ativos = servicos.filter((servico) => servico.status === 'ativo').length
 
@@ -121,18 +136,39 @@ export function ServicosPage() {
       />
 
       <Card>
-        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-          <SearchInput
-            id="servicos-busca"
-            className="sm:max-w-sm sm:flex-1"
-            rotulo="Buscar serviço"
-            placeholder="Buscar por nome ou descrição"
-            valor={busca}
-            aoMudar={setBusca}
-          />
-          <span className="text-sm text-muted-foreground sm:ml-auto">
-            {filtrados.length} {pluralizar(filtrados.length, 'resultado', 'resultados')}
-          </span>
+        <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:items-end sm:p-4">
+          {servicos.length > LIMITE_EXIBIR_BUSCA ? (
+            <SearchInput
+              id="servicos-busca"
+              className="sm:max-w-sm sm:flex-1"
+              rotulo="Buscar serviço"
+              placeholder="Buscar por nome ou descrição"
+              valor={busca}
+              aoMudar={setBusca}
+            />
+          ) : null}
+          <div className="min-w-0 sm:ml-auto sm:w-56">
+            <label htmlFor="servicos-ordem" className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <ArrowUpDown aria-hidden className="h-3.5 w-3.5" /> Ordenar serviços
+            </label>
+            <Select value={ordenacao} onValueChange={(valor) => setOrdenacao(valor as OrdenacaoServico)}>
+              <SelectTrigger id="servicos-ordem" aria-label="Ordenar serviços">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="frequencia">Mais realizados</SelectItem>
+                <SelectItem value="nome">Nome (A–Z)</SelectItem>
+                <SelectItem value="preco-maior">Maior preço</SelectItem>
+                <SelectItem value="preco-menor">Menor preço</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {servicos.length > LIMITE_EXIBIR_BUSCA ? (
+            <span className="text-sm text-muted-foreground">
+              {filtrados.length} {pluralizar(filtrados.length, 'resultado', 'resultados')}
+            </span>
+          ) : null}
         </CardContent>
       </Card>
 
