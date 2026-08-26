@@ -11,8 +11,8 @@ import type {
 /**
  * Contrato único da camada de dados.
  *
- * A UI nunca conhece a origem dos dados: hoje o `LocalRepository` (mock +
- * localStorage) implementa este contrato e o `SupabaseRepository` assume o
+ * A UI nunca conhece a origem dos dados: o `LocalRepository` (localStorage)
+ * implementa este contrato e o `SupabaseRepository` assume o
  * lugar assim que as variáveis de ambiente forem preenchidas.
  */
 export interface BarberRepository {

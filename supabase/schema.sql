@@ -1,5 +1,5 @@
 -- Barber Control — schema aplicado no projeto Supabase `barber-control`.
--- Reproduz as migrations: initial_schema, rls_acesso_publico_v1, servicos_iniciais.
+-- O schema não inclui carga inicial: clientes, serviços e visitas começam vazios.
 
 create extension if not exists "pgcrypto";
 
@@ -182,15 +182,3 @@ create policy visitas_acesso_publico_v1 on public.visitas
 drop policy if exists visita_servicos_acesso_publico_v1 on public.visita_servicos;
 create policy visita_servicos_acesso_publico_v1 on public.visita_servicos
   for all to anon, authenticated using (true) with check (true);
-
--- Serviços iniciais ----------------------------------------------------------
-insert into public.servicos (nome, descricao, preco, duracao_estimada, status)
-select v.nome, v.descricao, v.preco, v.duracao, 'ativo'::status_registro
-from (values
-  ('Corte de cabelo', 'Corte na máquina e tesoura com acabamento.', 45.00, 40),
-  ('Barba', 'Barba feita na navalha com toalha quente.', 35.00, 30),
-  ('Corte e barba', 'Combo completo de corte e barba.', 70.00, 65),
-  ('Acabamento', 'Retoque de pézinho e contornos entre os cortes.', 20.00, 15),
-  ('Sobrancelha', 'Design de sobrancelha masculina na navalha.', 15.00, 10)
-) as v(nome, descricao, preco, duracao)
-where not exists (select 1 from public.servicos s where s.nome = v.nome);

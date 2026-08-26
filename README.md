@@ -31,7 +31,7 @@ A interface usa a identidade visual oficial da **André Garcia Barber Shop** e p
 | Gráficos | Recharts |
 | Formulários | React Hook Form + Zod |
 | Datas | date-fns (locale pt-BR) |
-| Dados | Repositório local (mock + localStorage) ou Supabase |
+| Dados | Repositório local vazio (localStorage) ou Supabase |
 
 ## Como rodar
 
@@ -55,11 +55,11 @@ npm run test      # testes automatizados das regras de negócio
 
 Toda a UI conversa com um único contrato: [`BarberRepository`](src/data/repository.ts).
 
-- **Com Supabase configurado** (situação atual) → `SupabaseRepository`
+- **Com Supabase configurado** → `SupabaseRepository`
   (src/data/supabase-repository.ts).
-- **Sem Supabase configurado** → `LocalRepository` (src/data/local-repository.ts): base de
-  demonstração gerada por semente fixa, persistida em `localStorage`. Serve de fallback e
-  permite rodar o projeto sem credenciais.
+- **Sem Supabase configurado** (situação atual da produção) → `LocalRepository`
+  (src/data/local-repository.ts): começa vazio e guarda os cadastros no `localStorage`
+  deste aparelho.
 
 A escolha acontece em [`src/data/index.ts`](src/data/index.ts) e depende apenas das variáveis
 de ambiente — nenhuma tela precisa mudar.

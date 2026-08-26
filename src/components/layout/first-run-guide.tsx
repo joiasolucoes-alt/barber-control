@@ -1,11 +1,11 @@
 import * as React from 'react'
-import { CalendarPlus, Download, ShieldCheck, X } from 'lucide-react'
+import { CalendarPlus, Download, Scissors, UserPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { usePwaInstall } from '@/hooks/use-pwa-install'
 
-const CHAVE_ORIENTACAO = 'barber-control:orientacao-inicial-v1'
+const CHAVE_ORIENTACAO = 'barber-control:orientacao-inicial-v2'
 
 function orientacaoJaVista(): boolean {
   if (typeof window === 'undefined') return true
@@ -52,19 +52,23 @@ export function FirstRunGuide() {
         <X aria-hidden />
       </Button>
       <div className="pr-8">
-        <p className="heading-display text-lg font-semibold">Tudo pronto para começar</p>
+        <p className="heading-display text-lg font-semibold">Comece em três passos</p>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Registre cada atendimento para manter agenda, receita e retorno dos clientes atualizados.
+          A base está vazia e pronta para receber os dados reais da barbearia.
         </p>
       </div>
-      <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
+      <div className="mt-3 grid gap-2 text-xs">
         <p className="flex items-start gap-2 rounded-lg bg-muted/40 p-2.5">
-          <CalendarPlus aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          Use o botão central + Visita.
+          <Scissors aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          1. Cadastre os serviços e valores praticados.
         </p>
         <p className="flex items-start gap-2 rounded-lg bg-muted/40 p-2.5">
-          <ShieldCheck aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          Faça backup em Mais → Dados.
+          <UserPlus aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          2. Cadastre os clientes conforme forem chegando.
+        </p>
+        <p className="flex items-start gap-2 rounded-lg bg-muted/40 p-2.5">
+          <CalendarPlus aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          3. Use + Visita depois de cada atendimento.
         </p>
       </div>
       <div className="mt-3 flex gap-2">

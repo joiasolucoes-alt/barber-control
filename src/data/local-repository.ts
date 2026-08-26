@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
+import { criarBaseLocalVazia, removerDadosDemonstracao, type BaseLocal } from '@/data/local-base'
 import { agora, novoId, RepositoryError, type BarberRepository } from '@/data/repository'
-import { gerarBaseSimulada, type BaseSimulada } from '@/data/seed'
 import type {
   Cliente,
   ClienteInput,
@@ -15,7 +15,8 @@ import type {
   VisitaServico,
 } from '@/types'
 
-const CHAVE_STORAGE = 'barber-control:v1'
+const CHAVE_STORAGE = 'barber-control:v2'
+const CHAVE_STORAGE_ANTIGA = 'barber-control:v1'
 /** Pequena latência artificial para exercitar os estados de carregamento. */
 const LATENCIA_MS = 180
 
@@ -65,7 +66,7 @@ const basePersistidaSchema = z.object({
   ),
 })
 
-function migrarBasePersistida(base: z.infer<typeof basePersistidaSchema>): BaseSimulada {
+function migrarBasePersistida(base: z.infer<typeof basePersistidaSchema>): BaseLocal {
   const precoPorServico = new Map(base.servicos.map((servico) => [servico.id, servico.preco]))
   return {
     ...base,
@@ -81,7 +82,7 @@ function esperar<T>(valor: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(valor), LATENCIA_MS))
 }
 
-function persistir(base: BaseSimulada): void {
+function persistir(base: BaseLocal): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(CHAVE_STORAGE, JSON.stringify(base))
@@ -90,34 +91,44 @@ function persistir(base: BaseSimulada): void {
   }
 }
 
-function carregar(): BaseSimulada {
-  if (typeof window === 'undefined') return gerarBaseSimulada()
+function lerBasePersistida(chave: string): BaseLocal | null {
+  const bruto = window.localStorage.getItem(chave)
+  if (!bruto) return null
+  const resultado = basePersistidaSchema.safeParse(JSON.parse(bruto))
+  return resultado.success ? migrarBasePersistida(resultado.data) : null
+}
+
+function carregar(): BaseLocal {
+  if (typeof window === 'undefined') return criarBaseLocalVazia()
   try {
-    const bruto = window.localStorage.getItem(CHAVE_STORAGE)
-    if (bruto) {
-      const resultado = basePersistidaSchema.safeParse(JSON.parse(bruto))
-      if (resultado.success) {
-        const base = migrarBasePersistida(resultado.data)
-        persistir(base)
-        return base
-      }
+    const baseAtual = lerBasePersistida(CHAVE_STORAGE)
+    if (baseAtual) {
+      persistir(baseAtual)
+      return baseAtual
+    }
+
+    const baseAntiga = lerBasePersistida(CHAVE_STORAGE_ANTIGA)
+    if (baseAntiga) {
+      const baseMigrada = removerDadosDemonstracao(baseAntiga)
+      persistir(baseMigrada)
+      window.localStorage.removeItem(CHAVE_STORAGE_ANTIGA)
+      return baseMigrada
     }
   } catch {
-    // Storage corrompido ou indisponível: recomeça a partir da base simulada.
+    // Storage corrompido ou indisponível: recomeça com uma base vazia.
   }
-  const base = gerarBaseSimulada()
+  const base = criarBaseLocalVazia()
   persistir(base)
   return base
 }
 
 /**
- * Repositório local: mantém a base simulada em `localStorage`.
- * Implementação padrão enquanto o Supabase não está conectado.
+ * Repositório local: começa vazio e mantém os registros em `localStorage`.
  */
 export class LocalRepository implements BarberRepository {
   readonly nome = 'Dados neste aparelho'
 
-  private base: BaseSimulada
+  private base: BaseLocal
 
   constructor() {
     this.base = carregar()
@@ -366,8 +377,9 @@ export class LocalRepository implements BarberRepository {
   }
 }
 
-/** Utilitário exposto na UI para recriar a base de demonstração. */
+/** Utilitário exposto para apagar os dados armazenados neste navegador. */
 export function reiniciarBaseLocal(): void {
   if (typeof window === 'undefined') return
   window.localStorage.removeItem(CHAVE_STORAGE)
+  window.localStorage.removeItem(CHAVE_STORAGE_ANTIGA)
 }

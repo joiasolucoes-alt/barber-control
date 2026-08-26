@@ -5,7 +5,7 @@ import { SupabaseRepository } from '@/data/supabase-repository'
 
 /**
  * Ponto único de escolha da fonte de dados.
- * Basta preencher o `.env` com as credenciais para migrar do mock ao Supabase.
+ * Sem credenciais do Supabase, os dados começam vazios e ficam neste aparelho.
  */
 export const repository: BarberRepository = supabaseConfigurado
   ? new SupabaseRepository()

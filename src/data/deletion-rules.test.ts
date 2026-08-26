@@ -14,9 +14,15 @@ describe('exclusão segura de cadastros', () => {
 
   it('preserva cliente que possui histórico', async () => {
     const repository = new LocalRepository()
-    const [visita] = await repository.listarVisitas()
+    const cliente = await repository.criarCliente({ nome: 'Cliente com histórico' })
+    const servico = await repository.criarServico({ nome: 'Serviço utilizado' })
+    await repository.criarVisita({
+      cliente_id: cliente.id,
+      data_atendimento: '2025-01-01',
+      servico_ids: [servico.id],
+    })
 
-    await expect(repository.excluirCliente(visita.cliente_id)).rejects.toThrow('possui atendimentos')
+    await expect(repository.excluirCliente(cliente.id)).rejects.toThrow('possui atendimentos')
   })
 
   it('exclui um serviço nunca utilizado', async () => {
@@ -30,8 +36,13 @@ describe('exclusão segura de cadastros', () => {
 
   it('preserva serviço que aparece no histórico', async () => {
     const repository = new LocalRepository()
-    const [visita] = await repository.listarVisitas()
-    const [servico] = visita.servicos
+    const cliente = await repository.criarCliente({ nome: 'Outro cliente com histórico' })
+    const servico = await repository.criarServico({ nome: 'Outro serviço utilizado' })
+    await repository.criarVisita({
+      cliente_id: cliente.id,
+      data_atendimento: '2025-01-01',
+      servico_ids: [servico.id],
+    })
 
     await expect(repository.excluirServico(servico.id)).rejects.toThrow('possui atendimentos')
   })
