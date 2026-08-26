@@ -11,8 +11,8 @@ export default defineConfig({
       injectRegister: 'auto',
       manifest: {
         id: '/',
-        name: 'André Garcia · Barber Control',
-        short_name: 'Barber Control',
+        name: 'André Garcia Barber Shop',
+        short_name: 'André Garcia',
         description: 'Controle de clientes, visitas e retenção da André Garcia Barber Shop.',
         lang: 'pt-BR',
         start_url: '/',
@@ -23,11 +23,11 @@ export default defineConfig({
         theme_color: '#0b0b0d',
         categories: ['business', 'productivity'],
         icons: [
-          { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
-          { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'andre-garcia-icon-64x64.png', sizes: '64x64', type: 'image/png' },
+          { src: 'andre-garcia-icon-192x192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'andre-garcia-icon-512x512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: 'maskable-icon-512x512.png',
+            src: 'andre-garcia-maskable-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -42,7 +42,15 @@ export default defineConfig({
       workbox: {
         cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,svg,png,woff2}'],
-        globIgnores: ['**/supabase-*.js', '**/supabase-repository-*.js'],
+        globIgnores: [
+          '**/supabase-*.js',
+          '**/supabase-repository-*.js',
+          '**/andre-garcia-icon-master.png',
+          '**/favicon.{ico,svg}',
+          '**/apple-touch-icon-180x180.png',
+          '**/pwa-{64x64,192x192,512x512}.png',
+          '**/maskable-icon-512x512.png',
+        ],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {

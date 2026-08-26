@@ -29,10 +29,10 @@ export function Logo({ compacto = false, className }: { compacto?: boolean; clas
       )}
     >
       <img
-        src="/favicon.svg"
+        src="/andre-garcia-icon-192x192.png"
         alt="André Garcia Barber Shop"
-        width={64}
-        height={64}
+        width={192}
+        height={192}
         className="h-full w-full"
         decoding="async"
       />
