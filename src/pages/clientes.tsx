@@ -287,7 +287,7 @@ export function ClientesPage() {
             >
               <Filter aria-hidden />
               {quantidadeFiltrosAvancados > 0 ? (
-                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-card bg-destructive px-1 text-[0.625rem] font-bold text-destructive-foreground">
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-card bg-destructive px-1 text-nav font-bold text-destructive-foreground">
                   {quantidadeFiltrosAvancados}
                 </span>
               ) : null}

@@ -8,7 +8,7 @@ import {
   type AnaliseCliente,
 } from '@/lib/clientes-analise'
 import { agruparAgendaPorDia, resumirAgendaDia, resumirAgendaMes, resumirAgendaPeriodo } from '@/lib/agenda'
-import { dataISOValida } from '@/lib/format'
+import { dataISOValida, formatarEntradaDuracao, formatarEntradaMoeda, formatarTelefone } from '@/lib/format'
 import {
   calcularTaxasRetorno,
   calcularResumoHoje,
@@ -71,6 +71,12 @@ describe('datas e formulários', () => {
     const base = { nome: 'Rafael Almeida', data_nascimento: '', observacoes: '', status: 'ativo' as const }
     expect(clienteSchema.safeParse({ ...base, telefone: '' }).success).toBe(true)
     expect(clienteSchema.safeParse({ ...base, telefone: '(11) 9999-000' }).success).toBe(false)
+  })
+
+  it('normaliza telefone, moeda e duração durante a digitação', () => {
+    expect(formatarTelefone('11987654321')).toBe('(11) 98765-4321')
+    expect(formatarEntradaMoeda('R$ 123.456')).toBe('123,45')
+    expect(formatarEntradaDuracao('90 min')).toBe('90')
   })
 
   it('rejeita visita futura e exige pelo menos um serviço', () => {

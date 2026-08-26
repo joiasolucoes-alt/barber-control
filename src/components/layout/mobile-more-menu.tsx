@@ -205,7 +205,7 @@ export function MobileMoreMenu() {
           className={cn(
             'type-nav relative flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 font-medium tracking-tight transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-            ativo ? 'text-gold-600 dark:text-gold-300' : 'text-muted-foreground hover:text-foreground',
+            ativo ? 'text-gold-700 dark:text-gold-300' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           <span className={cn('flex h-7 w-12 items-center justify-center rounded-full transition-colors', ativo && 'bg-primary/15')}>

@@ -83,7 +83,7 @@ export function AppShell() {
             cabecalhoElevado ? 'bg-background/95 shadow-sm' : 'bg-background/85',
           )}
         >
-          <div className="flex min-h-14 items-center justify-end gap-2 px-3 sm:px-6 lg:min-h-16">
+          <div className="app-safe-inline flex min-h-14 items-center justify-end gap-2 lg:min-h-16">
             <div className="mr-auto flex min-w-0 items-center gap-2 lg:hidden">
               <Logo compacto className="h-10 w-10 shrink-0" />
               <span className="hidden truncate text-sm font-semibold min-[360px]:block">Barber Control</span>
@@ -105,11 +105,11 @@ export function AppShell() {
           </div>
         </header>
 
-        <main id="conteudo-principal" className="animate-fade-in px-3 py-5 pb-36 sm:px-6 sm:py-6 lg:py-8">
+        <main id="conteudo-principal" tabIndex={-1} className="app-safe-inline animate-fade-in py-5 pb-36 focus:outline-none sm:py-6 lg:py-8">
           <Outlet context={contextoOutlet} />
         </main>
 
-        <footer className="border-t border-border px-4 py-6 pb-28 text-xs text-muted-foreground sm:px-6 lg:pb-6">
+        <footer className="app-safe-inline border-t border-border py-6 pb-28 text-xs text-muted-foreground lg:pb-6">
           André Garcia Barber Shop · controle de clientes e atendimentos realizados.
         </footer>
       </div>

@@ -11,6 +11,7 @@ export default {
     extend: {
       fontSize: {
         meta: ['var(--font-size-meta)', { lineHeight: '1rem' }],
+        nav: ['var(--font-size-nav)', { lineHeight: '0.875rem' }],
       },
       fontFamily: {
         sans: ['"Manrope"', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],

@@ -11,7 +11,7 @@ export function ClienteAvatar({ nome, className }: ClienteAvatarProps) {
     <span
       aria-hidden
       className={cn(
-        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-xs font-semibold text-gold-600 dark:text-gold-300',
+        'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-xs font-semibold text-gold-700 dark:text-gold-300',
         className,
       )}
     >

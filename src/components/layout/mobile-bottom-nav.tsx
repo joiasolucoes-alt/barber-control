@@ -20,7 +20,7 @@ function MobileNavLink({ item }: { item: (typeof NAVEGACAO)[number] }) {
         cn(
           'type-nav relative flex min-w-0 flex-col items-center justify-center gap-1 px-0.5 font-medium tracking-tight transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-          isActive ? 'text-gold-600 dark:text-gold-300' : 'text-muted-foreground hover:text-foreground',
+          isActive ? 'text-gold-700 dark:text-gold-300' : 'text-muted-foreground hover:text-foreground',
         )
       }
     >
@@ -45,7 +45,7 @@ export function MobileBottomNav({ aoNovaVisita }: { aoNovaVisita: () => void }) 
       aria-label="Navegação principal no celular"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
     >
-      <div className="grid h-16 grid-cols-5">
+      <div className="safe-inset-inline grid h-16 grid-cols-5">
         <MobileNavLink item={inicio} />
         <MobileNavLink item={agenda} />
         <div className="type-nav relative flex flex-col items-center justify-end pb-1 font-medium tracking-tight text-primary">

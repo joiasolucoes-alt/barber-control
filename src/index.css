@@ -13,8 +13,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 8% 8%;
 
-    --primary: 44 68% 47%;
-    --primary-foreground: 240 10% 5%;
+    --primary: 43 63% 30%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 8% 12%;
@@ -152,6 +152,23 @@
 
   .surface-panel {
     @apply min-w-0 rounded-xl border border-border bg-card text-card-foreground shadow-surface;
+  }
+
+  .app-safe-inline {
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .safe-inset-inline {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  @media (min-width: 640px) {
+    .app-safe-inline {
+      padding-left: max(1.5rem, env(safe-area-inset-left));
+      padding-right: max(1.5rem, env(safe-area-inset-right));
+    }
   }
 }
 

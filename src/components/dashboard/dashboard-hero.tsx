@@ -69,14 +69,14 @@ export function DashboardHero({ resumo, carregando, aoRegistrarVisita }: Dashboa
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3" aria-label="Resumo de hoje">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3" role="group" aria-label="Resumo de hoje">
           {INDICADORES.map(({ chave, rotulo, icone: Icone }) => {
             const valor = resumo[chave]
             const formatado = chave === 'receita' || chave === 'ticketMedio' ? formatarMoeda(valor) : formatarNumero(valor)
 
             return (
               <div key={chave} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.07] p-3 backdrop-blur-sm">
-                <p className="flex min-h-7 min-w-0 items-start gap-1.5 text-[0.625rem] font-semibold uppercase leading-tight text-graphite-300 sm:min-h-0 sm:items-center sm:text-[0.6875rem] sm:tracking-wide">
+                <p className="flex min-h-7 min-w-0 items-start gap-1.5 text-nav font-semibold uppercase leading-tight text-graphite-300 sm:min-h-0 sm:items-center sm:tracking-wide">
                   <Icone aria-hidden className="h-3.5 w-3.5 shrink-0 text-gold-400" />
                   <span>{rotulo}</span>
                 </p>
