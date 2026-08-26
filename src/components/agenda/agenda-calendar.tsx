@@ -1,3 +1,4 @@
+import * as React from 'react'
 import {
   eachDayOfInterval,
   endOfMonth,
@@ -36,6 +37,7 @@ export function AgendaCalendar({
   aoMudarMes,
   aoSelecionarData,
 }: AgendaCalendarProps) {
+  const inicioGesto = React.useRef<{ x: number; y: number } | null>(null)
   const inicioMes = startOfMonth(mes)
   const hoje = startOfDay(new Date())
   const mesAtual = startOfMonth(hoje)
@@ -44,8 +46,34 @@ export function AgendaCalendar({
     end: endOfWeek(endOfMonth(inicioMes), { weekStartsOn: 0 }),
   })
 
+  function iniciarGesto(evento: React.TouchEvent) {
+    const toque = evento.touches[0]
+    inicioGesto.current = { x: toque.clientX, y: toque.clientY }
+  }
+
+  function finalizarGesto(evento: React.TouchEvent) {
+    const inicio = inicioGesto.current
+    inicioGesto.current = null
+    if (!inicio) return
+    const toque = evento.changedTouches[0]
+    const deltaX = toque.clientX - inicio.x
+    const deltaY = toque.clientY - inicio.y
+    if (Math.abs(deltaX) < 55 || Math.abs(deltaX) <= Math.abs(deltaY)) return
+
+    if (deltaX > 0) {
+      aoMudarMes(new Date(inicioMes.getFullYear(), inicioMes.getMonth() - 1, 1))
+    } else if (isAfter(mesAtual, inicioMes)) {
+      aoMudarMes(new Date(inicioMes.getFullYear(), inicioMes.getMonth() + 1, 1))
+    }
+  }
+
   return (
-    <section aria-label={`Calendário de ${format(inicioMes, "MMMM 'de' yyyy", { locale: ptBR })}`}>
+    <section
+      aria-label={`Calendário de ${format(inicioMes, "MMMM 'de' yyyy", { locale: ptBR })}`}
+      onTouchStart={iniciarGesto}
+      onTouchEnd={finalizarGesto}
+      className="touch-pan-y"
+    >
       <div className="flex items-center justify-between gap-2 border-b border-border p-3 sm:p-4">
         <Button
           type="button"
@@ -84,7 +112,7 @@ export function AgendaCalendar({
 
       <div className="grid grid-cols-7 border-b border-border bg-muted/30 px-1 py-2 sm:px-2">
         {DIAS_DA_SEMANA.map((dia) => (
-          <div key={dia} className="text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
+          <div key={dia} className="text-center text-meta font-semibold uppercase tracking-tight text-muted-foreground sm:tracking-wide">
             {dia}
           </div>
         ))}
@@ -127,7 +155,7 @@ export function AgendaCalendar({
                 {format(data, 'd')}
               </span>
               {resumo && resumo.atendimentos > 0 ? (
-                <span className="metric-number inline-flex min-w-6 items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] text-primary sm:text-xs">
+                <span className="metric-number inline-flex min-w-6 items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-meta text-primary">
                   {resumo.atendimentos}
                 </span>
               ) : (

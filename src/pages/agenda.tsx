@@ -1,22 +1,41 @@
 import * as React from 'react'
 import { startOfMonth } from 'date-fns'
-import { CalendarCheck2, ReceiptText, Users } from 'lucide-react'
+import { CalendarDays, List, Plus } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 
 import { AgendaCalendar } from '@/components/agenda/agenda-calendar'
 import { AgendaDiaDialog } from '@/components/agenda/agenda-dia-dialog'
-import { ErrorState } from '@/components/common/data-state'
+import { AgendaLista } from '@/components/agenda/agenda-lista'
+import { AgendaResumo } from '@/components/agenda/agenda-resumo'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
+import { ErrorState, TableSkeleton } from '@/components/common/data-state'
 import { PageHeader } from '@/components/common/page-header'
+import { VisitaDetalheDialog } from '@/components/visitas/visita-detalhe-dialog'
+import { VisitaFormDialog } from '@/components/visitas/visita-form-dialog'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { toast } from '@/components/ui/sonner'
 import { useBarberData } from '@/hooks/use-barber-data'
 import { resumirAgendaDia, resumirAgendaMes } from '@/lib/agenda'
-import { formatarMoeda, pluralizar } from '@/lib/format'
-import type { DataISO } from '@/types'
+import { formatarData } from '@/lib/format'
+import type { DataISO, VisitaDetalhada } from '@/types'
+
+type VisualizacaoAgenda = 'calendario' | 'lista'
 
 export function AgendaPage() {
-  const { visitas, carregando, erro, recarregar } = useBarberData()
+  const { visitas, carregando, erro, recarregar, excluirVisita } = useBarberData()
+  const [parametros, setParametros] = useSearchParams()
+  const visualizacao: VisualizacaoAgenda = parametros.get('visualizacao') === 'lista' ? 'lista' : 'calendario'
+
   const [mes, setMes] = React.useState(() => startOfMonth(new Date()))
   const [dataSelecionada, setDataSelecionada] = React.useState<DataISO | null>(null)
+  const [dataNovaVisita, setDataNovaVisita] = React.useState<DataISO | undefined>()
+  const [formAberto, setFormAberto] = React.useState(false)
+  const [visitaEmEdicao, setVisitaEmEdicao] = React.useState<VisitaDetalhada | null>(null)
+  const [visitaEmDetalhe, setVisitaEmDetalhe] = React.useState<VisitaDetalhada | null>(null)
+  const [visitaParaExcluir, setVisitaParaExcluir] = React.useState<VisitaDetalhada | null>(null)
 
   const resumoMes = React.useMemo(() => resumirAgendaMes(visitas, mes), [visitas, mes])
   const resumoDia = React.useMemo(
@@ -24,9 +43,43 @@ export function AgendaPage() {
     [visitas, dataSelecionada],
   )
 
+  function mudarVisualizacao(valor: string) {
+    const novaVisualizacao = valor as VisualizacaoAgenda
+    if (novaVisualizacao === 'lista') setParametros({ visualizacao: 'lista' }, { replace: true })
+    else setParametros({}, { replace: true })
+  }
+
   function mudarMes(novoMes: Date) {
     setMes(startOfMonth(novoMes))
     setDataSelecionada(null)
+  }
+
+  function abrirNova(data?: DataISO) {
+    setVisitaEmEdicao(null)
+    setDataNovaVisita(data)
+    setFormAberto(true)
+  }
+
+  function abrirEdicao(visita: VisitaDetalhada) {
+    setVisitaEmEdicao(visita)
+    setDataNovaVisita(undefined)
+    setFormAberto(true)
+  }
+
+  async function confirmarExclusao() {
+    if (!visitaParaExcluir) return
+    try {
+      await excluirVisita(visitaParaExcluir.id)
+      toast.success('Visita excluída', {
+        description: `O atendimento de ${visitaParaExcluir.cliente.nome} foi removido.`,
+      })
+    } catch (falha) {
+      toast.error('Não foi possível excluir', {
+        description: falha instanceof Error ? falha.message : 'Tente novamente em instantes.',
+      })
+    } finally {
+      setVisitaParaExcluir(null)
+    }
   }
 
   if (erro) {
@@ -42,69 +95,116 @@ export function AgendaPage() {
     <div className="space-y-5 sm:space-y-6">
       <PageHeader
         titulo="Agenda"
-        descricao="Consulte os atendimentos já realizados. Toque em um dia para ver clientes, serviços e valores."
+        descricao="Calendário e histórico completo dos atendimentos realizados."
+        acoes={
+          <Button onClick={() => abrirNova()}>
+            <Plus aria-hidden /> Registrar visita
+          </Button>
+        }
       />
 
-      {carregando ? (
-        <>
-          <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            {Array.from({ length: 3 }).map((_, indice) => (
-              <Skeleton key={indice} className="h-24 rounded-xl sm:h-28" />
-            ))}
-          </div>
-          <Skeleton className="h-[31rem] rounded-xl" />
-        </>
-      ) : (
-        <>
-          <section aria-label="Resumo do mês" className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4">
-            <Card className="p-3 sm:p-5">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Users aria-hidden className="h-4 w-4 shrink-0 text-primary" />
-                <span className="truncate text-[10px] font-semibold uppercase tracking-wide sm:text-xs">Clientes</span>
-              </div>
-              <p className="metric-number mt-2 text-2xl sm:text-3xl">{resumoMes.clientes}</p>
-              <p className="mt-1 hidden text-xs text-muted-foreground sm:block">pessoas diferentes</p>
-            </Card>
+      <Tabs value={visualizacao} onValueChange={mudarVisualizacao}>
+        <TabsList className="grid w-full grid-cols-2 sm:inline-grid sm:w-auto">
+          <TabsTrigger value="calendario">
+            <CalendarDays aria-hidden className="h-4 w-4" /> Calendário
+          </TabsTrigger>
+          <TabsTrigger value="lista">
+            <List aria-hidden className="h-4 w-4" /> Lista
+          </TabsTrigger>
+        </TabsList>
 
-            <Card className="p-3 sm:p-5">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <CalendarCheck2 aria-hidden className="h-4 w-4 shrink-0 text-primary" />
-                <span className="truncate text-[10px] font-semibold uppercase tracking-wide sm:text-xs">Visitas</span>
+        <TabsContent value="calendario" className="space-y-4">
+          {carregando ? (
+            <>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                {Array.from({ length: 3 }, (_, indice) => (
+                  <Skeleton key={indice} className="h-24 rounded-xl sm:h-28" />
+                ))}
               </div>
-              <p className="metric-number mt-2 text-2xl sm:text-3xl">{resumoMes.atendimentos}</p>
-              <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
-                {pluralizar(resumoMes.atendimentos, 'atendimento', 'atendimentos')}
-              </p>
-            </Card>
+              <Skeleton className="h-[31rem] rounded-xl" />
+            </>
+          ) : (
+            <>
+              <AgendaResumo resumo={resumoMes} rotulo="mês" />
 
-            <Card className="col-span-2 p-3 sm:col-span-1 sm:p-5">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <ReceiptText aria-hidden className="h-4 w-4 shrink-0 text-primary" />
-                <span className="truncate text-[10px] font-semibold uppercase tracking-wide sm:text-xs">Receita</span>
+              <Card className="overflow-hidden">
+                <AgendaCalendar
+                  mes={mes}
+                  dias={resumoMes.dias}
+                  dataSelecionada={dataSelecionada}
+                  aoMudarMes={mudarMes}
+                  aoSelecionarData={setDataSelecionada}
+                />
+              </Card>
+
+              <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/25 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                <span aria-hidden className="mt-0.5 inline-block h-3 w-3 shrink-0 rounded-full bg-primary/20 ring-1 ring-primary/40" />
+                O número dourado mostra a quantidade de atendimentos. Deslize para os lados ou use as setas para trocar o mês.
               </div>
-              <p className="metric-number mt-2 text-2xl sm:text-3xl">{formatarMoeda(resumoMes.receita)}</p>
-              <p className="mt-1 hidden text-xs text-muted-foreground sm:block">valor registrado</p>
-            </Card>
-          </section>
+            </>
+          )}
+        </TabsContent>
 
-          <Card className="overflow-hidden">
-            <AgendaCalendar
-              mes={mes}
-              dias={resumoMes.dias}
-              dataSelecionada={dataSelecionada}
-              aoMudarMes={mudarMes}
-              aoSelecionarData={setDataSelecionada}
+        <TabsContent value="lista">
+          {carregando ? (
+            <Card><TableSkeleton linhas={8} colunas={4} /></Card>
+          ) : (
+            <AgendaLista
+              visitas={visitas}
+              aoVisualizar={setVisitaEmDetalhe}
+              aoEditar={abrirEdicao}
+              aoExcluir={setVisitaParaExcluir}
+              aoRegistrar={() => abrirNova()}
             />
-          </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
-          <div className="flex items-start gap-2 rounded-xl border border-border bg-muted/25 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            <span aria-hidden className="mt-0.5 inline-block h-3 w-3 shrink-0 rounded-full bg-primary/20 ring-1 ring-primary/40" />
-            O número dourado em cada dia mostra apenas a quantidade de atendimentos realizados.
-          </div>
-        </>
-      )}
+      <AgendaDiaDialog
+        resumo={resumoDia}
+        aoFechar={() => setDataSelecionada(null)}
+        aoAbrirVisita={(visita) => {
+          setDataSelecionada(null)
+          setVisitaEmDetalhe(visita)
+        }}
+      />
 
-      <AgendaDiaDialog resumo={resumoDia} aoFechar={() => setDataSelecionada(null)} />
+      <VisitaFormDialog
+        aberto={formAberto}
+        aoMudarAberto={(aberto) => {
+          setFormAberto(aberto)
+          if (!aberto) setDataNovaVisita(undefined)
+        }}
+        visita={visitaEmEdicao}
+        dataInicial={visitaEmEdicao ? undefined : dataNovaVisita}
+      />
+
+      <VisitaDetalheDialog
+        visita={visitaEmDetalhe}
+        aoFechar={() => setVisitaEmDetalhe(null)}
+        aoEditar={(visita) => {
+          setVisitaEmDetalhe(null)
+          abrirEdicao(visita)
+        }}
+      />
+
+      <ConfirmDialog
+        aberto={Boolean(visitaParaExcluir)}
+        aoMudarAberto={(aberto) => {
+          if (!aberto) setVisitaParaExcluir(null)
+        }}
+        titulo="Excluir visita?"
+        descricao={
+          <>
+            O atendimento de <strong>{visitaParaExcluir?.cliente.nome}</strong> em{' '}
+            <strong>{visitaParaExcluir ? formatarData(visitaParaExcluir.data_atendimento) : ''}</strong> será removido
+            definitivamente, junto com os serviços vinculados.
+          </>
+        }
+        textoConfirmar="Excluir visita"
+        destrutivo
+        aoConfirmar={confirmarExclusao}
+      />
     </div>
   )
 }

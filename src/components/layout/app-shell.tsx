@@ -1,39 +1,19 @@
 import * as React from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
-import { Database, HardDrive, Moon, Plus, Sun, WifiOff } from 'lucide-react'
+import { Outlet } from 'react-router-dom'
+import { Moon, Plus, Sun, WifiOff } from 'lucide-react'
 
+import { DataSourceCard } from '@/components/layout/data-source-card'
 import { Logo } from '@/components/layout/logo'
 import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav'
-import { NAVEGACAO } from '@/components/layout/navigation'
+import { NAVEGACAO_ADMINISTRATIVA, NAVEGACAO_PRINCIPAL } from '@/components/layout/navigation'
 import { SidebarNav } from '@/components/layout/sidebar-nav'
 import { VisitaFormDialog } from '@/components/visitas/visita-form-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { useBarberData } from '@/hooks/use-barber-data'
 import { useOnlineStatus } from '@/hooks/use-online-status'
 import { useTema } from '@/hooks/use-theme'
-
-function FonteDeDados() {
-  const { fonte, usandoSupabase } = useBarberData()
-  const Icone = usandoSupabase ? Database : HardDrive
-
-  return (
-    <div className="rounded-lg border border-border bg-muted/40 p-3">
-      <p className="flex items-center gap-2 text-xs font-medium">
-        <Icone aria-hidden className="h-3.5 w-3.5 text-primary" />
-        Fonte de dados
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">{fonte}</p>
-      {!usandoSupabase ? (
-        <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-          Preencha o <code className="rounded bg-muted px-1">.env</code> com as credenciais do Supabase para migrar a
-          base sem alterar as telas.
-        </p>
-      ) : null}
-    </div>
-  )
-}
+import { cn } from '@/lib/utils'
 
 function BotaoTema() {
   const { tema, alternarTema } = useTema()
@@ -52,13 +32,20 @@ function BotaoTema() {
 
 export function AppShell() {
   const [visitaAberta, setVisitaAberta] = React.useState(false)
-  const localizacao = useLocation()
+  const [cabecalhoElevado, setCabecalhoElevado] = React.useState(false)
   const online = useOnlineStatus()
+  const abrirNovaVisita = React.useCallback(() => setVisitaAberta(true), [])
+  const contextoOutlet = React.useMemo(() => ({ abrirNovaVisita }), [abrirNovaVisita])
 
-  const tituloAtual =
-    NAVEGACAO.find((item) =>
-      item.exato ? localizacao.pathname === item.para : localizacao.pathname.startsWith(item.para),
-    )?.rotulo ?? 'André Garcia'
+  React.useEffect(() => {
+    function atualizarElevacao() {
+      setCabecalhoElevado(window.scrollY > 8)
+    }
+
+    atualizarElevacao()
+    window.addEventListener('scroll', atualizarElevacao, { passive: true })
+    return () => window.removeEventListener('scroll', atualizarElevacao)
+  }, [])
 
   return (
     <div className="min-h-dvh bg-background">
@@ -73,33 +60,35 @@ export function AppShell() {
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-card px-4 py-5 lg:flex">
         <Logo className="w-full" />
         <div className="gold-divider my-5" />
-        <SidebarNav />
+        <SidebarNav itens={NAVEGACAO_PRINCIPAL} />
         <div className="mt-auto space-y-3 pt-6">
           <Button type="button" className="w-full" onClick={() => setVisitaAberta(true)}>
             <Plus aria-hidden /> Registrar visita
           </Button>
-          <FonteDeDados />
+          <div className="rounded-xl border border-border bg-muted/20 p-2">
+            <p className="px-2 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Administração
+            </p>
+            <SidebarNav itens={NAVEGACAO_ADMINISTRATIVA} rotulo="Navegação administrativa" />
+          </div>
+          <DataSourceCard />
         </div>
       </aside>
 
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur">
-          <div className="flex min-h-[4.75rem] items-center gap-3 px-3 py-2 sm:px-6 lg:min-h-16 lg:py-0">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="lg:hidden">
-                <Logo compacto className="w-24 shrink-0 min-[360px]:w-28" />
-              </span>
-              <span className="min-w-0">
-                <span className="heading-display block truncate text-lg font-bold leading-none sm:text-xl lg:text-sm lg:font-semibold">
-                  {tituloAtual}
-                </span>
-                <span className="hidden text-xs text-muted-foreground sm:block">
-                  Controle de clientes e atendimentos
-                </span>
-              </span>
+        <header
+          className={cn(
+            'sticky top-0 z-30 border-b border-border pt-[env(safe-area-inset-top)] backdrop-blur transition-[background-color,box-shadow]',
+            cabecalhoElevado ? 'bg-background/95 shadow-sm' : 'bg-background/85',
+          )}
+        >
+          <div className="flex min-h-14 items-center justify-end gap-2 px-3 sm:px-6 lg:min-h-16">
+            <div className="mr-auto flex min-w-0 items-center gap-2 lg:hidden">
+              <Logo compacto className="h-10 w-10 shrink-0" />
+              <span className="hidden truncate text-sm font-semibold min-[360px]:block">Barber Control</span>
             </div>
 
-            <Badge variant="outline" className="hidden sm:inline-flex">
+            <Badge variant="outline" className="hidden md:inline-flex">
               Registro de atendimentos
             </Badge>
             {!online ? (
@@ -107,7 +96,7 @@ export function AppShell() {
                 <WifiOff aria-hidden className="h-3.5 w-3.5" /> Sem conexão
               </Badge>
             ) : null}
-            <Separator orientation="vertical" className="hidden h-6 sm:block" />
+            <Separator orientation="vertical" className="hidden h-6 md:block" />
             <BotaoTema />
             <Button type="button" className="hidden lg:inline-flex" onClick={() => setVisitaAberta(true)}>
               <Plus aria-hidden /> Nova visita
@@ -116,7 +105,7 @@ export function AppShell() {
         </header>
 
         <main id="conteudo-principal" className="animate-fade-in px-3 py-5 pb-36 sm:px-6 sm:py-6 lg:py-8">
-          <Outlet />
+          <Outlet context={contextoOutlet} />
         </main>
 
         <footer className="border-t border-border px-4 py-6 pb-28 text-xs text-muted-foreground sm:px-6 lg:pb-6">

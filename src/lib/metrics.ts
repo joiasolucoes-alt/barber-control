@@ -76,6 +76,30 @@ export interface Indicadores {
   faturamentoEstimado: number
 }
 
+export interface ResumoHoje {
+  atendimentos: number
+  receita: number
+  ticketMedio: number
+  clientesUnicos: number
+}
+
+/** Indicadores operacionais do dia, sempre baseados no preço congelado da visita. */
+export function calcularResumoHoje(
+  visitas: VisitaDetalhada[],
+  hoje = new Date(),
+): ResumoHoje {
+  const dataHoje = dateParaDataISO(hoje)
+  const visitasHoje = visitas.filter((visita) => visita.data_atendimento === dataHoje)
+  const receita = visitasHoje.reduce((total, visita) => total + valorDaVisita(visita), 0)
+
+  return {
+    atendimentos: visitasHoje.length,
+    receita,
+    ticketMedio: visitasHoje.length > 0 ? receita / visitasHoje.length : 0,
+    clientesUnicos: new Set(visitasHoje.map((visita) => visita.cliente_id)).size,
+  }
+}
+
 /**
  * "Clientes atendidos" = clientes distintos com pelo menos uma visita no período;
  * o mesmo cliente nunca é contado duas vezes no mesmo atendimento.

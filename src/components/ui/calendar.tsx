@@ -13,7 +13,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
     <DayPicker
       locale={ptBR}
       showOutsideDays={showOutsideDays}
-      className={cn('p-3', className)}
+      className={cn('p-1 sm:p-3', className)}
       classNames={{
         months: 'flex flex-col sm:flex-row gap-4',
         month: 'space-y-4',
@@ -22,16 +22,16 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         nav: 'space-x-1 flex items-center',
         nav_button: cn(
           buttonVariants({ variant: 'outline' }),
-          'h-7 w-7 bg-transparent p-0 opacity-60 hover:opacity-100',
+          'h-control w-control bg-transparent p-0 opacity-60 hover:opacity-100 sm:h-8 sm:w-8',
         ),
         nav_button_previous: 'absolute left-1',
         nav_button_next: 'absolute right-1',
         table: 'w-full border-collapse space-y-1',
         head_row: 'flex',
-        head_cell: 'text-muted-foreground rounded-md w-9 font-normal text-[0.75rem] capitalize',
+        head_cell: 'w-control rounded-md text-meta font-normal capitalize text-muted-foreground sm:w-9',
         row: 'flex w-full mt-2',
-        cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
-        day: cn(buttonVariants({ variant: 'ghost' }), 'h-9 w-9 p-0 font-normal aria-selected:opacity-100'),
+        cell: 'relative h-control w-control p-0 text-center text-sm focus-within:relative focus-within:z-20 sm:h-9 sm:w-9',
+        day: cn(buttonVariants({ variant: 'ghost' }), 'h-control w-control p-0 font-normal aria-selected:opacity-100 sm:h-9 sm:w-9'),
         day_range_start: 'day-range-start',
         day_range_end: 'day-range-end',
         day_selected:

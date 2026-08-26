@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, UserRoundX, Users } from 'lucide-react'
+import { Eye, Filter, MoreHorizontal, Pencil, Plus, Trash2, UserCheck, UserRoundX, Users } from 'lucide-react'
 
 import { BotaoWhatsApp } from '@/components/clientes/botao-whatsapp'
 import { ClienteMobileCard } from '@/components/clientes/cliente-mobile-card'
@@ -15,6 +15,7 @@ import { PageHeader } from '@/components/common/page-header'
 import { SearchInput } from '@/components/common/search-input'
 import { StatusBadge } from '@/components/common/status-badge'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   DropdownMenu,
@@ -25,6 +26,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { toast } from '@/components/ui/sonner'
 import { useBarberData } from '@/hooks/use-barber-data'
@@ -39,11 +49,13 @@ import {
   type SituacaoCliente,
 } from '@/lib/clientes-analise'
 import { exibirTelefone, formatarData, normalizar, pluralizar, telefoneCombina } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { Cliente, StatusRegistro } from '@/types'
 
 type FiltroStatus = 'todos' | StatusRegistro
 type FiltroSituacao = 'todas' | SituacaoCliente
 type Ordenacao = 'nome' | 'ultima-visita' | 'mais-visitas' | 'atraso'
+type FiltroRapido = 'todos' | 'em-risco' | 'perdido' | 'inativos'
 
 const ORDENACOES: Array<{ valor: Ordenacao; rotulo: string }> = [
   { valor: 'nome', rotulo: 'Nome (A-Z)' },
@@ -59,6 +71,8 @@ export function ClientesPage() {
   const [filtroStatus, setFiltroStatus] = React.useState<FiltroStatus>('todos')
   const [filtroSituacao, setFiltroSituacao] = React.useState<FiltroSituacao>('todas')
   const [ordenacao, setOrdenacao] = React.useState<Ordenacao>('nome')
+  const [somenteRecuperacao, setSomenteRecuperacao] = React.useState(false)
+  const [filtrosAbertos, setFiltrosAbertos] = React.useState(false)
   const [formAberto, setFormAberto] = React.useState(false)
   const [clienteEmEdicao, setClienteEmEdicao] = React.useState<Cliente | null>(null)
   const [clienteParaInativar, setClienteParaInativar] = React.useState<Cliente | null>(null)
@@ -78,6 +92,7 @@ export function ClientesPage() {
     const lista = analises.filter(({ cliente, situacao }) => {
       if (filtroStatus !== 'todos' && cliente.status !== filtroStatus) return false
       if (filtroSituacao !== 'todas' && situacao !== filtroSituacao) return false
+      if (somenteRecuperacao && situacao !== 'em-risco' && situacao !== 'perdido') return false
       if (!termo) return true
       return normalizar(cliente.nome).includes(termo) || telefoneCombina(cliente.telefone, buscaAdiada)
     })
@@ -94,7 +109,7 @@ export function ClientesPage() {
           return a.cliente.nome.localeCompare(b.cliente.nome, 'pt-BR')
       }
     })
-  }, [analises, buscaAdiada, filtroStatus, filtroSituacao, ordenacao])
+  }, [analises, buscaAdiada, filtroStatus, filtroSituacao, ordenacao, somenteRecuperacao])
 
   function abrirNovo() {
     setClienteEmEdicao(null)
@@ -150,6 +165,26 @@ export function ClientesPage() {
     setBusca('')
     setFiltroStatus('todos')
     setFiltroSituacao('todas')
+    setOrdenacao('nome')
+    setSomenteRecuperacao(false)
+  }
+
+  function aplicarFiltroRapido(filtro: FiltroRapido) {
+    setSomenteRecuperacao(false)
+    if (filtro === 'em-risco' || filtro === 'perdido') {
+      setFiltroStatus('ativo')
+      setFiltroSituacao(filtro)
+      return
+    }
+    setFiltroStatus(filtro === 'inativos' ? 'inativo' : 'todos')
+    setFiltroSituacao('todas')
+  }
+
+  function mostrarTodosPrioritarios() {
+    setFiltroStatus('ativo')
+    setFiltroSituacao('todas')
+    setSomenteRecuperacao(true)
+    requestAnimationFrame(() => document.getElementById('clientes-lista')?.scrollIntoView({ behavior: 'smooth' }))
   }
 
   if (erro) {
@@ -163,7 +198,42 @@ export function ClientesPage() {
 
   const totalCadastrados = clientes.length
   const semNenhumCadastro = !carregando && totalCadastrados === 0
-  const filtrosAtivos = Boolean(busca) || filtroStatus !== 'todos' || filtroSituacao !== 'todas'
+  const filtroRapidoAtivo: FiltroRapido | null = somenteRecuperacao
+    ? null
+    : filtroStatus === 'todos' && filtroSituacao === 'todas'
+      ? 'todos'
+      : filtroStatus === 'ativo' && filtroSituacao === 'em-risco'
+        ? 'em-risco'
+        : filtroStatus === 'ativo' && filtroSituacao === 'perdido'
+          ? 'perdido'
+          : filtroStatus === 'inativo' && filtroSituacao === 'todas'
+            ? 'inativos'
+            : null
+  const quantidadeFiltrosAvancados =
+    Number(ordenacao !== 'nome') +
+    Number(somenteRecuperacao) +
+    (filtroRapidoAtivo === null
+      ? Number(filtroStatus !== 'todos') + Number(filtroSituacao !== 'todas')
+      : 0)
+  const filtrosAtivos =
+    Boolean(busca) ||
+    filtroRapidoAtivo !== 'todos' ||
+    quantidadeFiltrosAvancados > 0
+  const contagemInativos = clientes.filter((cliente) => cliente.status === 'inativo').length
+  const filtrosRapidos: Array<{ chave: FiltroRapido; rotulo: string; quantidade: number }> = [
+    { chave: 'todos', rotulo: 'Todos', quantidade: totalCadastrados },
+    {
+      chave: 'em-risco',
+      rotulo: 'Em risco',
+      quantidade: paraRecuperar.filter((analise) => analise.situacao === 'em-risco').length,
+    },
+    {
+      chave: 'perdido',
+      rotulo: 'Perdidos',
+      quantidade: paraRecuperar.filter((analise) => analise.situacao === 'perdido').length,
+    },
+    { chave: 'inativos', rotulo: 'Inativos', quantidade: contagemInativos },
+  ]
 
   return (
     <div className="space-y-6">
@@ -177,76 +247,57 @@ export function ClientesPage() {
         }
       />
 
-      {!semNenhumCadastro ? (
-        <section aria-label="Retenção" className="grid gap-4 lg:grid-cols-2">
-          <CardPrecisamDeAtencao analises={paraRecuperar} />
-          <CardAniversariantes aniversariantes={aniversariantes} />
-        </section>
-      ) : null}
-
       <Card>
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="clientes-busca">Buscar</Label>
-            <SearchInput
-              id="clientes-busca"
-              rotulo="Buscar cliente por nome ou telefone"
-              placeholder="Nome ou telefone (com ou sem máscara)"
-              valor={busca}
-              aoMudar={setBusca}
-            />
+        <CardContent className="space-y-3 p-3 sm:p-4">
+          <SearchInput
+            id="clientes-busca"
+            rotulo="Buscar cliente por nome ou telefone"
+            placeholder="Buscar por nome ou telefone"
+            valor={busca}
+            aoMudar={setBusca}
+          />
+
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1" role="group" aria-label="Filtros rápidos">
+              {filtrosRapidos.map((filtro) => {
+                const ativo = filtroRapidoAtivo === filtro.chave
+                return (
+                  <Button
+                    key={filtro.chave}
+                    type="button"
+                    size="sm"
+                    variant={ativo ? 'default' : 'outline'}
+                    aria-pressed={ativo}
+                    onClick={() => aplicarFiltroRapido(filtro.chave)}
+                    className="shrink-0 rounded-full px-3"
+                  >
+                    {filtro.rotulo} <span className={cn('tabular-nums', ativo ? 'opacity-80' : 'text-muted-foreground')}>{filtro.quantidade}</span>
+                  </Button>
+                )
+              })}
+            </div>
+
+            <Button
+              type="button"
+              size="iconSm"
+              variant={quantidadeFiltrosAvancados > 0 ? 'default' : 'outline'}
+              aria-label={quantidadeFiltrosAvancados > 0 ? `Filtros avançados, ${quantidadeFiltrosAvancados} ativos` : 'Abrir filtros avançados'}
+              onClick={() => setFiltrosAbertos(true)}
+              className="relative shrink-0"
+            >
+              <Filter aria-hidden />
+              {quantidadeFiltrosAvancados > 0 ? (
+                <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-card bg-destructive px-1 text-[0.625rem] font-bold text-destructive-foreground">
+                  {quantidadeFiltrosAvancados}
+                </span>
+              ) : null}
+            </Button>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="clientes-situacao">Situação</Label>
-            <Select value={filtroSituacao} onValueChange={(valor) => setFiltroSituacao(valor as FiltroSituacao)}>
-              <SelectTrigger id="clientes-situacao" aria-label="Filtrar por situação">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as situações</SelectItem>
-                <SelectItem value="recorrente">Recorrentes ({resumo.porSituacao.recorrente})</SelectItem>
-                <SelectItem value="novo">Novos ({resumo.porSituacao.novo})</SelectItem>
-                <SelectItem value="em-risco">Em risco ({resumo.porSituacao['em-risco']})</SelectItem>
-                <SelectItem value="perdido">Perdidos ({resumo.porSituacao.perdido})</SelectItem>
-                <SelectItem value="sem-visitas">Sem visitas ({resumo.porSituacao['sem-visitas']})</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="clientes-status">Cadastro</Label>
-            <Select value={filtroStatus} onValueChange={(valor) => setFiltroStatus(valor as FiltroStatus)}>
-              <SelectTrigger id="clientes-status" aria-label="Filtrar por status do cadastro">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ativo">Somente ativos</SelectItem>
-                <SelectItem value="inativo">Somente inativos</SelectItem>
-                <SelectItem value="todos">Todos os status</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-            <Label htmlFor="clientes-ordem">Ordenar por</Label>
-            <Select value={ordenacao} onValueChange={(valor) => setOrdenacao(valor as Ordenacao)}>
-              <SelectTrigger id="clientes-ordem" aria-label="Ordenar lista">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ORDENACOES.map((opcao) => (
-                  <SelectItem key={opcao.valor} value={opcao.valor}>
-                    {opcao.rotulo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center justify-between gap-3 sm:col-span-2 lg:col-span-3">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
               {filtrados.length} {pluralizar(filtrados.length, 'resultado', 'resultados')}
+              {somenteRecuperacao ? <Badge>Prioritários</Badge> : null}
             </span>
             {filtrosAtivos ? (
               <Button variant="ghost" size="sm" onClick={limparFiltros}>
@@ -256,6 +307,92 @@ export function ClientesPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Sheet open={filtrosAbertos} onOpenChange={setFiltrosAbertos}>
+        <SheetContent side="bottom" className="max-h-[85dvh] rounded-t-2xl pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:mx-auto sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle>Filtros e ordenação</SheetTitle>
+            <SheetDescription>Refine a lista sem ocupar espaço na tela principal.</SheetDescription>
+          </SheetHeader>
+
+          <div className="grid gap-4 py-5 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="clientes-situacao">Situação</Label>
+              <Select
+                value={filtroSituacao}
+                onValueChange={(valor) => {
+                  setSomenteRecuperacao(false)
+                  setFiltroSituacao(valor as FiltroSituacao)
+                }}
+              >
+                <SelectTrigger id="clientes-situacao" aria-label="Filtrar por situação">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as situações</SelectItem>
+                  <SelectItem value="recorrente">Recorrentes ({resumo.porSituacao.recorrente})</SelectItem>
+                  <SelectItem value="novo">Novos ({resumo.porSituacao.novo})</SelectItem>
+                  <SelectItem value="em-risco">Em risco ({resumo.porSituacao['em-risco']})</SelectItem>
+                  <SelectItem value="perdido">Perdidos ({resumo.porSituacao.perdido})</SelectItem>
+                  <SelectItem value="sem-visitas">Sem visitas ({resumo.porSituacao['sem-visitas']})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="clientes-status">Cadastro</Label>
+              <Select
+                value={filtroStatus}
+                onValueChange={(valor) => {
+                  setSomenteRecuperacao(false)
+                  setFiltroStatus(valor as FiltroStatus)
+                }}
+              >
+                <SelectTrigger id="clientes-status" aria-label="Filtrar por status do cadastro">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="ativo">Somente ativos</SelectItem>
+                  <SelectItem value="inativo">Somente inativos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="clientes-ordem">Ordenar por</Label>
+              <Select value={ordenacao} onValueChange={(valor) => setOrdenacao(valor as Ordenacao)}>
+                <SelectTrigger id="clientes-ordem" aria-label="Ordenar lista">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ORDENACOES.map((opcao) => (
+                    <SelectItem key={opcao.valor} value={opcao.valor}>
+                      {opcao.rotulo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <SheetFooter>
+            <Button type="button" variant="ghost" onClick={limparFiltros}>Limpar tudo</Button>
+            <SheetClose asChild>
+              <Button type="button">Ver {filtrados.length} {pluralizar(filtrados.length, 'cliente', 'clientes')}</Button>
+            </SheetClose>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+
+      {!semNenhumCadastro && !filtrosAtivos ? (
+        <section aria-label="Retenção" className="grid items-start gap-4 lg:grid-cols-2">
+          <CardPrecisamDeAtencao analises={paraRecuperar} aoVerTodos={mostrarTodosPrioritarios} />
+          <CardAniversariantes aniversariantes={aniversariantes} />
+        </section>
+      ) : null}
+
+      <div id="clientes-lista" className="scroll-mt-24" />
 
       {carregando ? (
         <Card>
@@ -285,7 +422,7 @@ export function ClientesPage() {
         />
       ) : (
         <>
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-2 md:hidden">
             {filtrados.map((analise) => (
               <ClienteMobileCard
                 key={analise.cliente.id}

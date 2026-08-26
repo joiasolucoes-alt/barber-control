@@ -38,16 +38,24 @@ export function StatCard({
 
   return (
     <Card className={cn('overflow-hidden transition-colors', destaque && 'border-primary/40 bg-primary/[0.04]')}>
-      <CardContent className="flex items-start justify-between gap-4 p-5">
+      <CardContent className="flex items-start justify-between gap-2 p-3 sm:gap-4 sm:p-5">
         <div className="min-w-0 space-y-1.5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{rotulo}</p>
+          <p className="truncate text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs sm:tracking-wider">{rotulo}</p>
           {carregando ? (
             <Skeleton className="h-8 w-20" />
           ) : (
-            <p className="metric-number text-3xl leading-none">{valor}</p>
+            <p
+              className={cn(
+                'metric-number truncate text-2xl leading-none sm:text-3xl',
+                valor.length >= 10 && 'text-sm min-[360px]:text-base min-[390px]:text-lg sm:text-2xl',
+              )}
+              title={valor}
+            >
+              {valor}
+            </p>
           )}
-          {descricao ? <p className="text-xs text-muted-foreground">{descricao}</p> : null}
-          {comparacao !== undefined ? (
+          {descricao ? <p className="hidden text-xs text-muted-foreground sm:block">{descricao}</p> : null}
+          {comparacao ? (
             carregando ? (
               <Skeleton className="h-4 w-32" />
             ) : (
@@ -61,21 +69,20 @@ export function StatCard({
                   )}
                 >
                   <IconeVariacao aria-hidden className="h-3.5 w-3.5" />
-                  {comparacao === null
-                    ? 'Sem comparação'
-                    : comparacao.percentual === null
-                      ? 'Sem base anterior'
-                      : `${comparacao.percentual > 0 ? '+' : ''}${formatarPercentual(comparacao.percentual)}`}
+                  {comparacao.percentual === null
+                    ? 'Sem base anterior'
+                    : `${comparacao.percentual > 0 ? '+' : ''}${formatarPercentual(comparacao.percentual)}`}
                 </span>
-                {comparacao ? <span className="text-muted-foreground">· {comparacao.textoAnterior}</span> : null}
+                <span className="hidden text-muted-foreground sm:inline">· {comparacao.textoAnterior}</span>
               </div>
             )
           ) : null}
         </div>
         <div
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg]:h-5 [&_svg]:w-5',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg]:h-4 [&_svg]:w-4 sm:h-11 sm:w-11 sm:[&_svg]:h-5 sm:[&_svg]:w-5',
             destaque && 'bg-primary/15 text-primary',
+            valor.length >= 10 && 'hidden sm:flex',
           )}
           aria-hidden
         >

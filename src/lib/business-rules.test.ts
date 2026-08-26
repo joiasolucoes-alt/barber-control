@@ -4,17 +4,20 @@ import {
   analisarCliente,
   clientesParaRecuperar,
   INTERVALO_PADRAO_DIAS,
+  proximosAniversariantes,
   type AnaliseCliente,
 } from '@/lib/clientes-analise'
-import { resumirAgendaDia, resumirAgendaMes } from '@/lib/agenda'
+import { agruparAgendaPorDia, resumirAgendaDia, resumirAgendaMes, resumirAgendaPeriodo } from '@/lib/agenda'
 import { dataISOValida } from '@/lib/format'
 import {
   calcularTaxasRetorno,
+  calcularResumoHoje,
   compararIndicadores,
   serieNovosClientesPorMes,
   type Indicadores,
 } from '@/lib/metrics'
 import { clienteSchema, visitaSchema } from '@/lib/validators'
+import { ordenarServicosPorFrequencia, ultimaVisitaDoCliente } from '@/lib/visitas'
 import type { Cliente, ServicoRealizado, VisitaDetalhada } from '@/types'
 
 const timestamp = '2026-01-01T12:00:00.000Z'
@@ -88,6 +91,30 @@ describe('datas e formulários', () => {
       }).success,
     ).toBe(false)
   })
+
+  it('aceita preço cobrado personalizado e rejeita valor negativo', () => {
+    const base = {
+      cliente_id: 'cliente-1',
+      data_atendimento: '2026-01-01',
+      servico_ids: ['servico-1'],
+      observacoes: '',
+    }
+    expect(visitaSchema.safeParse({ ...base, precos_cobrados: { 'servico-1': '42,50' } }).success).toBe(true)
+    expect(visitaSchema.safeParse({ ...base, precos_cobrados: { 'servico-1': '-1' } }).success).toBe(false)
+  })
+})
+
+describe('atalhos do registro de visita', () => {
+  it('ordena serviços mais usados primeiro e encontra a última visita do cliente', () => {
+    const registro = cliente()
+    const barba = { ...corte, id: 'servico-2', nome: 'Barba' }
+    const antiga = visita(registro, '2026-01-01', 'antiga')
+    const intermediaria = { ...visita(registro, '2026-01-15', 'intermediaria'), servicos: [barba] }
+    const recente = { ...visita(registro, '2026-02-01', 'recente'), servicos: [barba] }
+
+    expect(ordenarServicosPorFrequencia([corte, barba], [antiga, intermediaria, recente])[0].id).toBe('servico-2')
+    expect(ultimaVisitaDoCliente([antiga, intermediaria, recente], registro.id)?.id).toBe('recente')
+  })
 })
 
 describe('retenção de clientes', () => {
@@ -131,6 +158,40 @@ describe('retenção de clientes', () => {
 })
 
 describe('indicadores do dashboard', () => {
+  it('resume atendimentos, receita, ticket e clientes únicos de hoje', () => {
+    const a = cliente('a')
+    const b = cliente('b')
+    const visitas = [
+      visita(a, '2026-08-10', 'a-1'),
+      visita(a, '2026-08-10', 'a-2'),
+      visita(b, '2026-08-10', 'b-1'),
+      visita(b, '2026-08-09', 'ontem'),
+    ]
+    visitas[1].servicos[0] = { ...corte, preco_cobrado: 55 }
+
+    expect(calcularResumoHoje(visitas, new Date(2026, 7, 10))).toEqual({
+      atendimentos: 3,
+      receita: 155,
+      ticketMedio: 155 / 3,
+      clientesUnicos: 2,
+    })
+  })
+
+  it('lista próximos aniversários atravessando a virada do ano', () => {
+    const dezembro = { ...cliente('dezembro'), data_nascimento: '1990-12-31' }
+    const janeiro = { ...cliente('janeiro'), data_nascimento: '1995-01-02' }
+    const proximos = proximosAniversariantes(
+      [janeiro, dezembro],
+      new Date(2026, 11, 30),
+      2,
+    )
+
+    expect(proximos.map((item) => [item.cliente.id, item.diasAte])).toEqual([
+      ['dezembro', 1],
+      ['janeiro', 3],
+    ])
+  })
+
   it('calcula retorno por coorte sem contar visita no mesmo dia', () => {
     const a = cliente('a')
     const b = cliente('b')
@@ -190,6 +251,22 @@ describe('indicadores do dashboard', () => {
 })
 
 describe('agenda de atendimentos', () => {
+  it('agrupa a lista por dia em ordem decrescente e resume o período', () => {
+    const a = cliente('a')
+    const b = cliente('b')
+    const visitas = [
+      visita(a, '2026-08-09', 'a-1'),
+      visita(a, '2026-08-10', 'a-2'),
+      visita(b, '2026-08-10', 'b-1'),
+    ]
+
+    expect(agruparAgendaPorDia(visitas).map((dia) => [dia.data, dia.atendimentos])).toEqual([
+      ['2026-08-10', 2],
+      ['2026-08-09', 1],
+    ])
+    expect(resumirAgendaPeriodo(visitas)).toEqual({ clientes: 2, atendimentos: 3, receita: 150 })
+  })
+
   it('separa clientes únicos da quantidade de visitas e soma os preços históricos', () => {
     const a = cliente('a')
     const b = cliente('b')

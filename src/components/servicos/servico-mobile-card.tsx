@@ -31,7 +31,7 @@ export function ServicoMobileCard({
   aoExcluir,
 }: ServicoMobileCardProps) {
   return (
-    <Card>
+    <Card className="content-auto">
       <CardContent className="space-y-4 p-4">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -70,15 +70,15 @@ export function ServicoMobileCard({
         </div>
         <dl className="grid grid-cols-3 divide-x divide-border rounded-lg bg-muted/40 py-3 text-center">
           <div className="px-2">
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Preço</dt>
+            <dt className="ui-eyebrow">Preço</dt>
             <dd className="mt-1 text-xs font-semibold">{formatarMoeda(servico.preco)}</dd>
           </div>
           <div className="px-2">
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Duração</dt>
+            <dt className="ui-eyebrow">Duração</dt>
             <dd className="mt-1 text-xs font-semibold">{formatarDuracao(servico.duracao_estimada)}</dd>
           </div>
           <div className="px-2">
-            <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Realizados</dt>
+            <dt className="ui-eyebrow">Realizados</dt>
             <dd className="mt-1 text-xs font-semibold tabular-nums">{formatarNumero(realizados)}</dd>
           </div>
         </dl>

@@ -1,4 +1,4 @@
-import { differenceInCalendarDays } from 'date-fns'
+import { differenceInCalendarDays, startOfDay } from 'date-fns'
 
 import { apenasDigitos, dataISOParaDate, dateParaDataISO } from '@/lib/format'
 import { rankingServicos, type ItemRankingServico } from '@/lib/metrics'
@@ -175,6 +175,40 @@ export interface Aniversariante {
   /** Idade que completa neste aniversário. */
   idade: number | null
   ehHoje: boolean
+}
+
+export interface ProximoAniversariante extends Aniversariante {
+  proximaData: DataISO
+  diasAte: number
+}
+
+/** Próximos aniversários a partir de hoje, atravessando a virada do ano. */
+export function proximosAniversariantes(
+  clientes: Cliente[],
+  hoje = new Date(),
+  limite = 3,
+): ProximoAniversariante[] {
+  const dataBase = startOfDay(hoje)
+
+  return clientes
+    .filter((cliente) => cliente.status === 'ativo' && cliente.data_nascimento)
+    .map((cliente) => {
+      const [anoNascimento, mes, dia] = (cliente.data_nascimento as string).split('-').map(Number)
+      let proxima = new Date(dataBase.getFullYear(), mes - 1, dia)
+      if (proxima < dataBase) proxima = new Date(dataBase.getFullYear() + 1, mes - 1, dia)
+
+      return {
+        cliente,
+        dia,
+        mes,
+        idade: anoNascimento ? proxima.getFullYear() - anoNascimento : null,
+        ehHoje: differenceInCalendarDays(proxima, dataBase) === 0,
+        proximaData: dateParaDataISO(proxima),
+        diasAte: differenceInCalendarDays(proxima, dataBase),
+      }
+    })
+    .sort((a, b) => a.diasAte - b.diasAte || a.cliente.nome.localeCompare(b.cliente.nome, 'pt-BR'))
+    .slice(0, Math.max(0, limite))
 }
 
 /** Clientes que fazem aniversário no mês informado, em ordem de dia. */

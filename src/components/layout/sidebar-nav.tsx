@@ -1,16 +1,18 @@
 import { NavLink } from 'react-router-dom'
 
-import { NAVEGACAO } from '@/components/layout/navigation'
+import { NAVEGACAO, type ItemNavegacao } from '@/components/layout/navigation'
 import { cn } from '@/lib/utils'
 
 interface SidebarNavProps {
   aoNavegar?: () => void
+  itens?: ItemNavegacao[]
+  rotulo?: string
 }
 
-export function SidebarNav({ aoNavegar }: SidebarNavProps) {
+export function SidebarNav({ aoNavegar, itens = NAVEGACAO, rotulo = 'Navegação principal' }: SidebarNavProps) {
   return (
-    <nav aria-label="Navegação principal" className="flex flex-col gap-1">
-      {NAVEGACAO.map((item) => {
+    <nav aria-label={rotulo} className="flex flex-col gap-1">
+      {itens.map((item) => {
         const Icone = item.icone
         return (
           <NavLink

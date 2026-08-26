@@ -1,10 +1,11 @@
 import * as React from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarRange, Cake, Pencil, Phone, Plus, StickyNote } from 'lucide-react'
+import { useParams } from 'react-router-dom'
+import { CalendarRange, Cake, Pencil, Phone, Plus, StickyNote } from 'lucide-react'
 
 import { BotaoWhatsApp } from '@/components/clientes/botao-whatsapp'
 import { ClienteFormDialog } from '@/components/clientes/cliente-form-dialog'
 import { SituacaoBadge } from '@/components/clientes/situacao-badge'
+import { BackButton } from '@/components/common/back-button'
 import { ClienteAvatar } from '@/components/common/cliente-avatar'
 import { EmptyState } from '@/components/common/empty-state'
 import { ErrorState } from '@/components/common/data-state'
@@ -46,7 +47,6 @@ function LinhaInfo({ icone, rotulo, valor }: { icone: React.ReactNode; rotulo: s
 
 export function ClienteDetalhePage() {
   const { id = '' } = useParams()
-  const navegar = useNavigate()
   const { clientes, visitas, carregando, erro, recarregar } = useBarberData()
 
   const [formAberto, setFormAberto] = React.useState(false)
@@ -71,7 +71,7 @@ export function ClienteDetalhePage() {
   if (carregando) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-9 w-40" />
+        <BackButton para="/clientes" rotulo="Voltar para clientes" />
         <Skeleton className="h-40 w-full rounded-xl" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
@@ -85,9 +85,7 @@ export function ClienteDetalhePage() {
         titulo="Cliente não encontrado"
         descricao="O cliente pode ter sido removido ou o endereço está incorreto."
         acao={
-          <Button variant="outline" onClick={() => navegar('/clientes')}>
-            <ArrowLeft aria-hidden /> Voltar para clientes
-          </Button>
+          <BackButton para="/clientes" rotulo="Voltar para clientes" className="ml-0 border border-border px-3" />
         }
       />
     )
@@ -95,11 +93,7 @@ export function ClienteDetalhePage() {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
-        <Link to="/clientes">
-          <ArrowLeft aria-hidden /> Voltar para clientes
-        </Link>
-      </Button>
+      <BackButton para="/clientes" rotulo="Voltar para clientes" />
 
       <Card>
         <CardContent className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between">

@@ -89,4 +89,6 @@ export type VisitaInput = {
   data_atendimento: DataISO
   observacoes?: string | null
   servico_ids: string[]
+  /** Valor efetivamente cobrado por serviço; ausente mantém o preço padrão ou histórico. */
+  precos_cobrados?: Record<string, number | null>
 }

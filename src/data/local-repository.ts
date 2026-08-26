@@ -153,7 +153,11 @@ export class LocalRepository implements BarberRepository {
     }
   }
 
-  private trocarServicos(visitaId: string, servicoIds: string[]) {
+  private trocarServicos(
+    visitaId: string,
+    servicoIds: string[],
+    precosCobrados: Record<string, number | null> = {},
+  ) {
     const idsDesejados = new Set(servicoIds)
     const existentes = this.base.visitaServicos.filter((item) => item.visita_id === visitaId)
     const idsExistentes = new Set(existentes.map((item) => item.servico_id))
@@ -162,13 +166,21 @@ export class LocalRepository implements BarberRepository {
       (item) => item.visita_id !== visitaId || idsDesejados.has(item.servico_id),
     )
 
+    this.base.visitaServicos = this.base.visitaServicos.map((vinculo) =>
+      vinculo.visita_id === visitaId && Object.hasOwn(precosCobrados, vinculo.servico_id)
+        ? { ...vinculo, preco_cobrado: precosCobrados[vinculo.servico_id] }
+        : vinculo,
+    )
+
     const novos: VisitaServico[] = servicoIds
       .filter((servicoId) => !idsExistentes.has(servicoId))
       .map((servicoId) => ({
         id: novoId(),
         visita_id: visitaId,
         servico_id: servicoId,
-        preco_cobrado: this.base.servicos.find((servico) => servico.id === servicoId)?.preco ?? null,
+        preco_cobrado: Object.hasOwn(precosCobrados, servicoId)
+          ? precosCobrados[servicoId]
+          : (this.base.servicos.find((servico) => servico.id === servicoId)?.preco ?? null),
       }))
     this.base.visitaServicos.push(...novos)
   }
@@ -324,7 +336,7 @@ export class LocalRepository implements BarberRepository {
       updated_at: timestamp,
     }
     this.base.visitas.push(visita)
-    this.trocarServicos(visita.id, input.servico_ids)
+    this.trocarServicos(visita.id, input.servico_ids, input.precos_cobrados)
     this.salvar()
     return esperar(this.detalhar(visita))
   }
@@ -341,7 +353,7 @@ export class LocalRepository implements BarberRepository {
       updated_at: agora(),
     }
     this.base.visitas[indice] = atualizada
-    this.trocarServicos(id, input.servico_ids)
+    this.trocarServicos(id, input.servico_ids, input.precos_cobrados)
     this.salvar()
     return esperar(this.detalhar(atualizada))
   }

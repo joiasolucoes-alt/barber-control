@@ -9,3 +9,4 @@ dist-ssr
 .vite
 *.tsbuildinfo
 .vercel
+artifacts/

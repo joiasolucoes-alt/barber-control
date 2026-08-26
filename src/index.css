@@ -33,6 +33,9 @@
     --ring: 44 68% 47%;
 
     --radius: 0.65rem;
+    --control-height: 2.75rem;
+    --font-size-meta: 0.75rem;
+    --font-size-nav: 0.6875rem;
   }
 
   .dark {
@@ -132,5 +135,29 @@
 
   .skeleton {
     @apply animate-pulse rounded-md bg-muted;
+  }
+
+  .ui-meta {
+    @apply text-meta leading-relaxed text-muted-foreground;
+  }
+
+  .ui-eyebrow {
+    @apply text-meta font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .type-nav {
+    font-size: var(--font-size-nav);
+    line-height: 0.875rem;
+  }
+
+  .surface-panel {
+    @apply min-w-0 rounded-xl border border-border bg-card text-card-foreground shadow-surface;
+  }
+}
+
+@layer utilities {
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 10rem;
   }
 }

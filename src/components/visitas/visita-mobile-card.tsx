@@ -24,7 +24,7 @@ interface VisitaMobileCardProps {
 
 export function VisitaMobileCard({ visita, aoVisualizar, aoEditar, aoExcluir }: VisitaMobileCardProps) {
   return (
-    <Card>
+    <Card className="content-auto">
       <CardContent className="space-y-3 p-4">
         <div className="flex items-start gap-3">
           <ClienteAvatar nome={visita.cliente.nome} className="h-11 w-11 shrink-0" />

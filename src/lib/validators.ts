@@ -74,6 +74,15 @@ export const servicoSchema = z.object({
 
 export type ServicoFormValues = z.infer<typeof servicoSchema>
 
+const precoCobradoTexto = z
+  .string()
+  .trim()
+  .refine((valor) => {
+    if (valor === '') return true
+    const numero = Number(valor.replace(',', '.'))
+    return Number.isFinite(numero) && numero >= 0 && numero <= 999999.99
+  }, 'Informe um valor entre 0 e 999.999,99.')
+
 export const visitaSchema = z.object({
   cliente_id: z.string({ required_error: 'Selecione o cliente.' }).min(1, 'Selecione o cliente.'),
   data_atendimento: z
@@ -84,6 +93,7 @@ export const visitaSchema = z.object({
       message: 'A visita registra um atendimento que já aconteceu.',
     }),
   servico_ids: z.array(z.string()).min(1, 'Selecione pelo menos um serviço.'),
+  precos_cobrados: z.record(precoCobradoTexto).default({}),
   observacoes: z.string().trim().max(500, 'Máximo de 500 caracteres.').optional(),
 })
 

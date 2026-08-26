@@ -24,16 +24,16 @@ export function Logo({ compacto = false, className }: { compacto?: boolean; clas
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-md border border-gold-500/30 bg-black shadow-sm shadow-black/20',
+        'aspect-square overflow-hidden rounded-xl border border-gold-500/30 bg-black shadow-sm shadow-black/20',
         className,
       )}
     >
       <img
-        src="/logo-andre-garcia.png"
+        src="/favicon.svg"
         alt="André Garcia Barber Shop"
-        width={306}
-        height={175}
-        className="h-auto w-full"
+        width={64}
+        height={64}
+        className="h-full w-full"
         decoding="async"
       />
     </div>

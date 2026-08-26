@@ -111,7 +111,11 @@ export class SupabaseRepository implements BarberRepository {
     return this.mapearVisita(validarResposta(visitaComRelacoesSchema, data, 'A visita recebida é inválida.'))
   }
 
-  private async sincronizarServicos(visitaId: string, servicoIds: string[]) {
+  private async sincronizarServicos(
+    visitaId: string,
+    servicoIds: string[],
+    precosCobrados: Record<string, number | null> = {},
+  ) {
     const idsDesejados = [...new Set(servicoIds)]
     const { data: vinculosAtuais, error: erroLeitura } = await this.db
       .from('visita_servicos')
@@ -152,7 +156,9 @@ export class SupabaseRepository implements BarberRepository {
           paraAdicionar.map((servicoId) => ({
             visita_id: visitaId,
             servico_id: servicoId,
-            preco_cobrado: precoPorServico.get(servicoId) ?? null,
+            preco_cobrado: Object.hasOwn(precosCobrados, servicoId)
+              ? precosCobrados[servicoId]
+              : (precoPorServico.get(servicoId) ?? null),
           })),
         )
       if (error) throw new RepositoryError('Não foi possível vincular os serviços à visita.', error)
@@ -165,6 +171,23 @@ export class SupabaseRepository implements BarberRepository {
         .eq('visita_id', visitaId)
         .in('servico_id', paraRemover)
       if (error) throw new RepositoryError('Não foi possível remover serviços antigos da visita.', error)
+    }
+
+    const paraAtualizar = idsDesejados.filter(
+      (servicoId) => idsAtuais.has(servicoId) && Object.hasOwn(precosCobrados, servicoId),
+    )
+    if (paraAtualizar.length > 0) {
+      const resultados = await Promise.all(
+        paraAtualizar.map((servicoId) =>
+          this.db
+            .from('visita_servicos')
+            .update({ preco_cobrado: precosCobrados[servicoId] })
+            .eq('visita_id', visitaId)
+            .eq('servico_id', servicoId),
+        ),
+      )
+      const falha = resultados.find((resultado) => resultado.error)
+      if (falha?.error) throw new RepositoryError('Não foi possível atualizar o valor cobrado.', falha.error)
     }
   }
 
@@ -322,7 +345,7 @@ export class SupabaseRepository implements BarberRepository {
 
     const visitaId = validarResposta(z.object({ id: z.string() }), data, 'A visita salva é inválida.').id
     try {
-      await this.sincronizarServicos(visitaId, input.servico_ids)
+      await this.sincronizarServicos(visitaId, input.servico_ids, input.precos_cobrados)
       return await this.buscarVisita(visitaId)
     } catch (falha) {
       // Evita deixar uma visita incompleta quando o vínculo dos serviços falha.
@@ -343,7 +366,7 @@ export class SupabaseRepository implements BarberRepository {
       .eq('id', id)
     if (error) throw new RepositoryError('Não foi possível atualizar a visita.', error)
 
-    await this.sincronizarServicos(id, input.servico_ids)
+    await this.sincronizarServicos(id, input.servico_ids, input.precos_cobrados)
     return this.buscarVisita(id)
   }
 

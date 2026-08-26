@@ -21,6 +21,21 @@ export interface ResumoAgendaMes {
   dias: Map<DataISO, ResumoAgendaDia>
 }
 
+export interface ResumoAgendaPeriodo {
+  clientes: number
+  atendimentos: number
+  receita: number
+}
+
+/** Consolida qualquer conjunto de visitas, preservando os valores históricos. */
+export function resumirAgendaPeriodo(visitas: VisitaDetalhada[]): ResumoAgendaPeriodo {
+  return {
+    clientes: new Set(visitas.map((visita) => visita.cliente_id)).size,
+    atendimentos: visitas.length,
+    receita: visitas.reduce((total, visita) => total + valorDaVisita(visita), 0),
+  }
+}
+
 export function resumirAgendaDia(
   visitas: VisitaDetalhada[],
   data: DataISO,
@@ -63,4 +78,10 @@ export function resumirAgendaMes(
     receita: visitasDoMes.reduce((total, visita) => total + valorDaVisita(visita), 0),
     dias,
   }
+}
+
+/** Agrupa o histórico por dia, do mais recente para o mais antigo. */
+export function agruparAgendaPorDia(visitas: VisitaDetalhada[]): ResumoAgendaDia[] {
+  const datas = [...new Set(visitas.map((visita) => visita.data_atendimento))].sort((a, b) => b.localeCompare(a))
+  return datas.map((data) => resumirAgendaDia(visitas, data))
 }

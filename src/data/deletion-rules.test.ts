@@ -57,4 +57,27 @@ describe('exclusão segura de cadastros', () => {
     expect(atualizada.servicos[0].preco).toBe(80)
     expect(atualizada.servicos[0].preco_cobrado).toBe(50)
   })
+
+  it('salva e atualiza o valor realmente cobrado na visita', async () => {
+    const repository = new LocalRepository()
+    const cliente = await repository.criarCliente({ nome: 'Cliente com desconto' })
+    const servico = await repository.criarServico({ nome: 'Corte promocional', preco: 50 })
+    const visita = await repository.criarVisita({
+      cliente_id: cliente.id,
+      data_atendimento: '2025-01-01',
+      servico_ids: [servico.id],
+      precos_cobrados: { [servico.id]: 42.5 },
+    })
+
+    expect(visita.servicos[0].preco_cobrado).toBe(42.5)
+
+    const atualizada = await repository.atualizarVisita(visita.id, {
+      cliente_id: cliente.id,
+      data_atendimento: visita.data_atendimento,
+      servico_ids: [servico.id],
+      precos_cobrados: { [servico.id]: 45 },
+    })
+
+    expect(atualizada.servicos[0].preco_cobrado).toBe(45)
+  })
 })

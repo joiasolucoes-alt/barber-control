@@ -20,9 +20,6 @@ const ClientesPage = React.lazy(() =>
 const ClienteDetalhePage = React.lazy(() =>
   import('@/pages/cliente-detalhe').then((modulo) => ({ default: modulo.ClienteDetalhePage })),
 )
-const VisitasPage = React.lazy(() =>
-  import('@/pages/visitas').then((modulo) => ({ default: modulo.VisitasPage })),
-)
 const ServicosPage = React.lazy(() =>
   import('@/pages/servicos').then((modulo) => ({ default: modulo.ServicosPage })),
 )
@@ -58,7 +55,7 @@ export default function App() {
               <Route path="agenda" element={<React.Suspense fallback={<CarregandoPagina />}><AgendaPage /></React.Suspense>} />
               <Route path="clientes" element={<React.Suspense fallback={<CarregandoPagina />}><ClientesPage /></React.Suspense>} />
               <Route path="clientes/:id" element={<React.Suspense fallback={<CarregandoPagina />}><ClienteDetalhePage /></React.Suspense>} />
-              <Route path="visitas" element={<React.Suspense fallback={<CarregandoPagina />}><VisitasPage /></React.Suspense>} />
+              <Route path="visitas" element={<Navigate to="/agenda?visualizacao=lista" replace />} />
               <Route path="servicos" element={<React.Suspense fallback={<CarregandoPagina />}><ServicosPage /></React.Suspense>} />
               <Route path="dashboard" element={<Navigate to="/" replace />} />
               <Route path="*" element={<React.Suspense fallback={<CarregandoPagina />}><NaoEncontradoPage /></React.Suspense>} />
